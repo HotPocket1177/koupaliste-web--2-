@@ -1,0 +1,30 @@
+---
+import { site } from '../data/site.js';
+---
+<section class="hero">
+  <div class="hero-photo" role="img" aria-label="Koupaliště v Teplicích nad Metují"></div>
+  <div class="hero-overlay"></div>
+  <div class="container hero-content">
+    <img src="/logo.png" alt="" class="hero-stamp" width="132" height="132" />
+    <p class="eyebrow hero-eyebrow">Teplice nad Metují · od {site.odRoku}</p>
+    <h1>Kiosek<br />koupaliště</h1>
+    <p class="hero-lead">{site.slogan} Výběrová káva, čepované pivo a zmrzlina — kousek od vody.</p>
+    <div class="hero-actions">
+      <a href="/#otevreno" class="btn btn-primary">Otevírací doba</a>
+      <a href="/#kde" class="btn btn-ghost">Kde nás najdete</a>
+    </div>
+  </div>
+  <style>
+    .hero { position: relative; color: var(--cream); overflow: hidden; }
+    .hero-photo { position: absolute; inset: 0; background-image: url('/hero.jpg'); background-size: cover; background-position: center 40%; }
+    .hero-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,35,61,0.55) 0%, rgba(20,35,61,0.25) 40%, rgba(20,35,61,0.75) 100%); }
+    .hero-content { position: relative; padding-block: clamp(3.5rem, 12vw, 7rem); max-width: 760px; }
+    .hero-stamp { border-radius: 50%; background: var(--cream); box-shadow: var(--shadow-lg); margin-bottom: 1.4rem; }
+    .hero-eyebrow { color: var(--cream); }
+    .hero-eyebrow::before { background: var(--red); }
+    .hero h1 { color: #fff; margin-top: 0.4rem; text-shadow: 0 2px 20px rgba(0,0,0,0.35); }
+    .hero-lead { font-size: clamp(1.05rem, 2.2vw, 1.3rem); max-width: 46ch; color: var(--water-pale); margin-top: 0.6rem; margin-bottom: 1.8rem; }
+    .hero-actions { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+    .hero::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 22px; background: var(--paper); -webkit-mask: radial-gradient(18px at 50% 0, transparent 97%, #000) repeat-x; mask: radial-gradient(18px at 50% 0, transparent 97%, #000) repeat-x; -webkit-mask-size: 40px 22px; mask-size: 40px 22px; }
+  </style>
+</section>

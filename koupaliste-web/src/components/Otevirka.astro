@@ -1,0 +1,82 @@
+---
+import { site } from '../data/site.js';
+const { dny, poznamka } = site.otevirka;
+---
+<section id="otevreno" class="section section-cream">
+  <div class="container">
+    <p class="eyebrow">Kdy máme otevřeno</p>
+    <div class="ot-grid">
+      <div class="ot-status" data-open-widget>
+        <div class="status-badge" data-status>
+          <span class="dot"></span>
+          <span data-status-text>Zjišťuji…</span>
+        </div>
+        <p class="status-detail" data-status-detail></p>
+        <p class="ot-poznamka">{poznamka}</p>
+      </div>
+      <table class="ot-table">
+        <caption class="sr-only">Otevírací doba podle dnů</caption>
+        <tbody>
+          {dny.map((d, i) => (
+            <tr data-day-index={i}>
+              <th scope="row">{d.den}</th>
+              <td>{d.od}–{d.do}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script define:vars={{ dny }}>
+    const mapJsToList = { 1:0, 2:1, 3:2, 4:3, 5:4, 6:5, 0:6 };
+    const now = new Date();
+    const idx = mapJsToList[now.getDay()];
+    const dnesek = dny[idx];
+    const row = document.querySelector(`tr[data-day-index="${idx}"]`);
+    if (row) row.classList.add('is-today');
+    const badge = document.querySelector('[data-status]');
+    const text = document.querySelector('[data-status-text]');
+    const detail = document.querySelector('[data-status-detail]');
+    function toMin(t) { const [h,m] = t.split(':').map(Number); return h*60+m; }
+    const nowMin = now.getHours()*60 + now.getMinutes();
+    const otevreno = dnesek && nowMin >= toMin(dnesek.od) && nowMin < toMin(dnesek.do);
+    if (otevreno) {
+      badge.classList.add('is-open');
+      text.textContent = 'Teď máme otevřeno';
+      detail.textContent = `Dnes do ${dnesek.do}.`;
+    } else {
+      badge.classList.add('is-closed');
+      text.textContent = 'Právě zavřeno';
+      if (dnesek && nowMin < toMin(dnesek.od)) {
+        detail.textContent = `Dnes otevíráme v ${dnesek.od}.`;
+      } else {
+        let next = null;
+        for (let step = 1; step <= 7; step++) {
+          const d = dny[(idx + step) % 7];
+          if (d) { next = d; break; }
+        }
+        detail.textContent = next ? `Další otevřeno: ${next.den} od ${next.od}.` : '';
+      }
+    }
+  </script>
+  <style>
+    .ot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.2rem; align-items: start; margin-top: 1.4rem; }
+    .ot-status { align-self: stretch; }
+    .status-badge { display: inline-flex; align-items: center; gap: 0.6rem; font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; font-size: 1.5rem; padding: 0.5rem 1rem; border-radius: var(--radius); background: #fff; box-shadow: var(--shadow); }
+    .status-badge .dot { width: 14px; height: 14px; border-radius: 50%; background: #999; }
+    .status-badge.is-open { color: #1a7a3c; }
+    .status-badge.is-open .dot { background: #22a34e; box-shadow: 0 0 0 4px rgba(34,163,78,0.18); }
+    .status-badge.is-closed { color: var(--red-dark); }
+    .status-badge.is-closed .dot { background: var(--red); }
+    .status-detail { font-size: 1.05rem; margin-top: 0.8rem; font-weight: 500; }
+    .ot-poznamka { color: #5a6376; font-size: 0.92rem; max-width: 40ch; }
+    .ot-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    .ot-table th, .ot-table td { text-align: left; padding: 0.7rem 1.1rem; border-bottom: 1px solid var(--sand); }
+    .ot-table th { font-family: var(--font-body); font-weight: 500; text-transform: none; }
+    .ot-table td { text-align: right; font-variant-numeric: tabular-nums; color: var(--navy); font-weight: 500; }
+    .ot-table tr:last-child th, .ot-table tr:last-child td { border-bottom: none; }
+    .ot-table tr.is-today { background: var(--water-pale); }
+    .ot-table tr.is-today th, .ot-table tr.is-today td { font-weight: 700; }
+    @media (max-width: 760px) { .ot-grid { grid-template-columns: 1fr; gap: 1.4rem; } }
+  </style>
+</section>

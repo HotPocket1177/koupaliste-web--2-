@@ -1,0 +1,114 @@
+---
+import '../styles/global.css';
+import { site } from '../data/site.js';
+
+const { title, description } = Astro.props;
+const pageTitle = title ? `${title} — ${site.nazev}` : `${site.nazev} — ${site.podtitul}`;
+const desc = description ?? `${site.nazev} v ${site.podtitul}. ${site.slogan} Výběrová káva, čepované pivo, zmrzlina a osvěžení u vody.`;
+
+// Odkaz "Akce" v menu ukážeme jen když je aspoň jedna nadcházející akce.
+const dnesMenu = new Date(); dnesMenu.setHours(0,0,0,0);
+const maAkce = (site.akce ?? []).some((a) => new Date(a.datum + 'T23:59:59') >= dnesMenu);
+---
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{pageTitle}</title>
+  <meta name="description" content={desc} />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <meta property="og:title" content={pageTitle} />
+  <meta property="og:description" content={desc} />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/og.jpg" />
+  <meta name="theme-color" content="#1b2f52" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="/" class="brand" aria-label={`${site.nazev} — domů`}>
+        <img src="/logo.png" alt="" width="52" height="52" />
+        <span class="brand-text">
+          <strong>{site.nazev}</strong>
+          <small>{site.podtitul} · od {site.odRoku}</small>
+        </span>
+      </a>
+      <nav class="nav" aria-label="Hlavní navigace">
+        <a href="/#nabidka">Nabídka</a>
+        {maAkce && <a href="/#akce">Akce</a>}
+        <a href="/#otevreno">Otevírací doba</a>
+        <a href="/#kde">Kde nás najdete</a>
+        <a href={site.kontakt.telefonHref} class="nav-cta">{site.kontakt.telefon}</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <slot />
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <div class="footer-brand">
+          <img src="/logo.png" alt="" width="46" height="46" />
+          <span><strong>{site.nazev}</strong><br /><small>od {site.odRoku}</small></span>
+        </div>
+        <p class="footer-slogan">{site.slogan}</p>
+      </div>
+      <div>
+        <h4>Kontakt</h4>
+        <p>
+          <a href={site.kontakt.telefonHref}>{site.kontakt.telefon}</a><br />
+          <a href={`mailto:${site.kontakt.email}`}>{site.kontakt.email}</a>
+        </p>
+        <p>{site.kontakt.adresaRadky.map((r) => (<span>{r}<br /></span>))}</p>
+      </div>
+      <div>
+        <h4>Sledujte nás</h4>
+        <p class="footer-links">
+          <a href={site.site.facebook} target="_blank" rel="noopener">Facebook</a>
+          <a href={site.site.instagram} target="_blank" rel="noopener">Instagram</a>
+          <a href={site.site.firmy} target="_blank" rel="noopener">Firmy.cz</a>
+        </p>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <span>© {new Date().getFullYear()} {site.nazev} · Teplice nad Metují</span>
+    </div>
+  </footer>
+
+  <style>
+    .site-header {
+      position: sticky; top: 0; z-index: 50; background: rgba(27, 47, 82, 0.96);
+      backdrop-filter: blur(6px); border-bottom: 3px solid var(--red);
+    }
+    .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.6rem; }
+    .brand { display: flex; align-items: center; gap: 0.7rem; text-decoration: none; }
+    .brand img { border-radius: 50%; background: var(--cream); }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
+    .brand-text strong { font-family: var(--font-display); text-transform: uppercase; color: #fff; font-size: 1.05rem; letter-spacing: 0.03em; font-weight: 600; }
+    .brand-text small { color: var(--water); font-size: 0.72rem; letter-spacing: 0.05em; }
+    .nav { display: flex; align-items: center; gap: 1.4rem; }
+    .nav a { color: var(--cream); font-family: var(--font-display); text-transform: uppercase; font-size: 0.9rem; letter-spacing: 0.05em; font-weight: 500; text-decoration: none; }
+    .nav a:hover { color: #fff; text-decoration: underline; text-underline-offset: 4px; }
+    .nav-cta { background: var(--red); padding: 0.4rem 0.9rem; border-radius: var(--radius); color: #fff !important; }
+    .nav-cta:hover { background: var(--red-dark); text-decoration: none !important; }
+    @media (max-width: 760px) { .nav a:not(.nav-cta) { display: none; } }
+    .site-footer { background: var(--navy-deep); color: var(--cream); padding-top: 3rem; margin-top: 0; }
+    .footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 2rem; padding-bottom: 2rem; }
+    .footer-brand { display: flex; align-items: center; gap: 0.7rem; }
+    .footer-brand img { border-radius: 50%; background: var(--cream); }
+    .footer-brand strong { font-family: var(--font-display); text-transform: uppercase; color: #fff; }
+    .footer-brand small { color: var(--water); }
+    .footer-slogan { margin-top: 0.8rem; color: var(--water-pale); max-width: 30ch; }
+    .site-footer h4 { font-family: var(--font-display); text-transform: uppercase; color: #fff; font-size: 0.95rem; letter-spacing: 0.08em; margin-bottom: 0.6rem; }
+    .site-footer a { color: var(--cream); }
+    .site-footer a:hover { color: #fff; }
+    .footer-links { display: flex; flex-direction: column; gap: 0.3rem; }
+    .footer-bottom { border-top: 1px solid rgba(245, 236, 216, 0.15); padding-block: 1.2rem; font-size: 0.85rem; color: var(--water-pale); }
+    @media (max-width: 760px) { .footer-grid { grid-template-columns: 1fr; gap: 1.6rem; } }
+  </style>
+</body>
+</html>

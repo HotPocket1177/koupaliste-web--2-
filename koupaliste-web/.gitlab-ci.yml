@@ -1,0 +1,15 @@
+# Build a nasazení Astro webu na GitLab Pages.
+# Spustí se při každém pushi do větve "main".
+
+pages:
+  image: node:lts
+  before_script:
+    - npm ci
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      # Tato složka MUSÍ být "public" — odsud GitLab Pages publikuje web.
+      - public
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
