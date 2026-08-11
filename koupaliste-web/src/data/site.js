@@ -23,6 +23,32 @@ export const site = {
     firmy: 'https://www.firmy.cz/detail/14047340-kiosek-koupaliste-pavel-volk-teplice-nad-metuji.html',
   },
 
+  // ─────────────────────────────────────────────────────────────
+  //  PRÁVNÍ INFORMACE — obsah okénka otevíraného tlačítkem v hlavičce.
+  // ─────────────────────────────────────────────────────────────
+  pravni: {
+    provozovatel: {
+      jmeno: 'Pavel Volk',
+      ico: '60911204',
+      sidlo: 'Spojenecká 61, 541 01 Trutnov – Střední Předměstí',
+      poznamka: 'Podnikatel je zapsán v živnostenském rejstříku. Příslušný živnostenský úřad: Městský úřad Trutnov.',
+    },
+    provozovna: {
+      nazev: 'Kiosek koupaliště',
+      adresaRadky: ['Koupaliště Teplice nad Metují', '549 57 Teplice nad Metují'],
+      idProvozovny: '1016230711',
+      poznamka: 'Provozovna je vedena pro hostinskou činnost a prodej kvasného lihu, konzumního lihu a lihovin. Zahájení provozování je ve výpisu uvedeno 27. 6. 2026.',
+    },
+    mimosoudniUvod: 'V případě, že mezi provozovatelem a spotřebitelem vznikne spotřebitelský spor z kupní smlouvy nebo ze smlouvy o poskytování služeb, který se nepodaří vyřešit vzájemnou dohodou, může spotřebitel podat návrh na mimosoudní řešení spotřebitelského sporu u příslušného subjektu:',
+    coi: {
+      nazev: 'Česká obchodní inspekce',
+      oddeleni: 'Ústřední inspektorát – oddělení ADR',
+      adresaRadky: ['Gorazdova 1969/24', '120 00 Praha 2'],
+      email: 'adr@coi.gov.cz',
+    },
+    ochranaSoukromi: 'Tyto webové stránky neshromažďují osobní údaje návštěvníků a nepoužívají analytické ani marketingové cookies.',
+  },
+
   otevirka: {
     poznamka: 'Provoz je sezónní a závisí na počasí. Aktuální info sledujte na Facebooku.',
     dny: [

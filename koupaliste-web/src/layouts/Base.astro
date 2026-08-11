@@ -39,10 +39,58 @@ const maAkce = (site.akce ?? []).some((a) => new Date(a.datum + 'T23:59:59') >= 
         {maAkce && <a href="/#akce">Akce</a>}
         <a href="/#otevreno">Otevírací doba</a>
         <a href="/#kde">Kde nás najdete</a>
+        <button type="button" class="nav-legal" id="pravni-otevrit">Právní informace</button>
         <a href={site.kontakt.telefonHref} class="nav-cta">{site.kontakt.telefon}</a>
       </nav>
     </div>
   </header>
+
+  <dialog id="pravni-dialog" class="pravni-dialog" aria-labelledby="pravni-nadpis">
+    <button type="button" class="pravni-zavrit" id="pravni-zavrit" aria-label="Zavřít právní informace">×</button>
+    <div class="pravni-obsah">
+      <h2 id="pravni-nadpis">Právní informace</h2>
+
+      <h3>Provozovatel</h3>
+      <p>
+        {site.pravni.provozovatel.jmeno}<br />
+        IČO: {site.pravni.provozovatel.ico}<br />
+        Sídlo: {site.pravni.provozovatel.sidlo}
+      </p>
+      <p>{site.pravni.provozovatel.poznamka}</p>
+
+      <h3>Provozovna</h3>
+      <p>
+        {site.pravni.provozovna.nazev}<br />
+        {site.pravni.provozovna.adresaRadky.map((r) => (<span>{r}<br /></span>))}
+        Identifikační číslo provozovny: {site.pravni.provozovna.idProvozovny}
+      </p>
+      <p>{site.pravni.provozovna.poznamka}</p>
+
+      <h3>Mimosoudní řešení spotřebitelských sporů</h3>
+      <p>{site.pravni.mimosoudniUvod}</p>
+      <p>
+        {site.pravni.coi.nazev}<br />
+        {site.pravni.coi.oddeleni}<br />
+        {site.pravni.coi.adresaRadky.map((r) => (<span>{r}<br /></span>))}
+        E-mail: <a href={`mailto:${site.pravni.coi.email}`}>{site.pravni.coi.email}</a>
+      </p>
+
+      <h3>Ochrana soukromí</h3>
+      <p>{site.pravni.ochranaSoukromi}</p>
+    </div>
+  </dialog>
+
+  <script>
+    const dialog = document.getElementById('pravni-dialog');
+    const otevritBtn = document.getElementById('pravni-otevrit');
+    const zavritBtn = document.getElementById('pravni-zavrit');
+
+    otevritBtn?.addEventListener('click', () => dialog?.showModal());
+    zavritBtn?.addEventListener('click', () => dialog?.close());
+    dialog?.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+  </script>
 
   <main>
     <slot />
@@ -95,12 +143,42 @@ const maAkce = (site.akce ?? []).some((a) => new Date(a.datum + 'T23:59:59') >= 
     .nav a:hover { color: #fff; text-decoration: underline; text-underline-offset: 4px; }
     .nav-cta { background: var(--red); padding: 0.4rem 0.9rem; border-radius: var(--radius); color: #fff !important; white-space: nowrap; }
     .nav-cta:hover { background: var(--red-dark); text-decoration: none !important; }
+    .nav-legal {
+      background: transparent; border: 1px solid rgba(245, 236, 216, 0.5); border-radius: var(--radius);
+      color: var(--cream); font-family: var(--font-display); text-transform: uppercase;
+      font-size: 0.78rem; letter-spacing: 0.04em; font-weight: 500; padding: 0.35rem 0.7rem;
+      cursor: pointer; white-space: nowrap;
+    }
+    .nav-legal:hover { background: var(--cream); color: var(--navy); border-color: var(--cream); }
     @media (max-width: 760px) {
       .nav a:not(.nav-cta) { display: none; }
       .nav-cta { font-size: 0.78rem; padding: 0.35rem 0.6rem; letter-spacing: 0.02em; }
+      .nav-legal { font-size: 0.68rem; padding: 0.32rem 0.55rem; }
     }
     @media (max-width: 400px) {
       .nav-cta { font-size: 0.7rem; padding: 0.3rem 0.5rem; }
+      .nav-legal { font-size: 0.62rem; padding: 0.28rem 0.45rem; }
+    }
+
+    .pravni-dialog {
+      border: none; border-radius: 8px; padding: 0; margin: auto;
+      width: min(94vw, 640px); max-height: min(85vh, 720px);
+      background: var(--paper); color: var(--ink);
+    }
+    .pravni-dialog::backdrop { background: rgba(20, 35, 61, 0.6); backdrop-filter: blur(2px); }
+    .pravni-obsah { padding: 2.4rem 1.6rem 2rem; overflow-y: auto; max-height: min(85vh, 720px); }
+    .pravni-obsah h2 { color: var(--navy); font-size: 1.4rem; margin-bottom: 1rem; }
+    .pravni-obsah h3 { color: var(--navy); font-size: 1rem; letter-spacing: 0.03em; margin-top: 1.6rem; margin-bottom: 0.4rem; }
+    .pravni-obsah p { color: #33405c; line-height: 1.6; font-size: 0.95rem; }
+    .pravni-zavrit {
+      position: absolute; top: 0.7rem; right: 0.7rem; z-index: 1;
+      width: 36px; height: 36px; border-radius: 50%; border: none;
+      background: var(--red); color: #fff; font-size: 1.3rem; line-height: 1;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .pravni-zavrit:hover { background: var(--red-dark); }
+    @media (max-width: 560px) {
+      .pravni-obsah { padding: 3rem 1.2rem 1.6rem; }
     }
     .site-footer { background: var(--navy-deep); color: var(--cream); padding-top: 3rem; margin-top: 0; }
     .footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 2rem; padding-bottom: 2rem; }
