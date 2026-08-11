@@ -34,15 +34,30 @@ const maAkce = (site.akce ?? []).some((a) => new Date(a.datum + 'T23:59:59') >= 
           <small>{site.podtitul} · od {site.odRoku}</small>
         </span>
       </a>
-      <nav class="nav" aria-label="Hlavní navigace">
-        <a href="/#nabidka">Nabídka</a>
-        {maAkce && <a href="/#akce">Akce</a>}
-        <a href="/#otevreno">Otevírací doba</a>
-        <a href="/#kde">Kde nás najdete</a>
-        <button type="button" class="nav-legal" id="pravni-otevrit">Právní informace</button>
+      <div class="header-actions">
+        <nav class="nav" aria-label="Hlavní navigace">
+          <a href="/#nabidka">Nabídka</a>
+          {maAkce && <a href="/#akce">Akce</a>}
+          <a href="/#otevreno">Otevírací doba</a>
+          <a href="/#kde">Kde nás najdete</a>
+          <button type="button" class="nav-legal pravni-otevrit">Právní informace</button>
+        </nav>
         <a href={site.kontakt.telefonHref} class="nav-cta">{site.kontakt.telefon}</a>
-      </nav>
+        <button type="button" class="burger" id="burger-toggle" aria-expanded="false" aria-controls="mobile-menu" aria-label="Otevřít menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
     </div>
+
+    <nav class="mobile-menu" id="mobile-menu" aria-label="Mobilní navigace">
+      <ul>
+        <li><a href="/#nabidka">Nabídka</a></li>
+        {maAkce && <li><a href="/#akce">Akce</a></li>}
+        <li><a href="/#otevreno">Otevírací doba</a></li>
+        <li><a href="/#kde">Kde nás najdete</a></li>
+        <li><button type="button" class="menu-link pravni-otevrit">Právní informace</button></li>
+      </ul>
+    </nav>
   </header>
 
   <dialog id="pravni-dialog" class="pravni-dialog" aria-labelledby="pravni-nadpis">
@@ -88,13 +103,37 @@ const maAkce = (site.akce ?? []).some((a) => new Date(a.datum + 'T23:59:59') >= 
 
   <script>
     const dialog = document.getElementById('pravni-dialog');
-    const otevritBtn = document.getElementById('pravni-otevrit');
     const zavritBtn = document.getElementById('pravni-zavrit');
 
-    otevritBtn?.addEventListener('click', () => dialog?.showModal());
+    document.querySelectorAll('.pravni-otevrit').forEach((btn) => {
+      btn.addEventListener('click', () => dialog?.showModal());
+    });
     zavritBtn?.addEventListener('click', () => dialog?.close());
     dialog?.addEventListener('click', (e) => {
       if (e.target === dialog) dialog.close();
+    });
+
+    const burger = document.getElementById('burger-toggle');
+    const mobileMenu = document.getElementById('mobile-menu');
+
+    burger?.addEventListener('click', () => {
+      const open = mobileMenu?.classList.toggle('open');
+      burger.setAttribute('aria-expanded', String(!!open));
+      burger.setAttribute('aria-label', open ? 'Zavřít menu' : 'Otevřít menu');
+    });
+    mobileMenu?.querySelectorAll('a, button.menu-link').forEach((el) => {
+      el.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
+        burger?.setAttribute('aria-expanded', 'false');
+        burger?.setAttribute('aria-label', 'Otevřít menu');
+      });
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        mobileMenu?.classList.remove('open');
+        burger?.setAttribute('aria-expanded', 'false');
+        burger?.setAttribute('aria-label', 'Otevřít menu');
+      }
     });
   </script>
 
@@ -144,6 +183,7 @@ const maAkce = (site.akce ?? []).some((a) => new Date(a.datum + 'T23:59:59') >= 
     .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
     .brand-text strong { font-family: var(--font-display); text-transform: uppercase; color: #fff; font-size: 1.05rem; letter-spacing: 0.03em; font-weight: 600; }
     .brand-text small { color: var(--water); font-size: 0.72rem; letter-spacing: 0.05em; }
+    .header-actions { display: flex; align-items: center; gap: 1rem; }
     .nav { display: flex; align-items: center; gap: 1.4rem; }
     .nav a { color: var(--cream); font-family: var(--font-display); text-transform: uppercase; font-size: 0.9rem; letter-spacing: 0.05em; font-weight: 500; text-decoration: none; }
     .nav a:hover { color: #fff; text-decoration: underline; text-underline-offset: 4px; }
@@ -156,14 +196,41 @@ const maAkce = (site.akce ?? []).some((a) => new Date(a.datum + 'T23:59:59') >= 
       cursor: pointer; white-space: nowrap;
     }
     .nav-legal:hover { background: var(--cream); color: var(--navy); border-color: var(--cream); }
+
+    .burger {
+      display: none; width: 36px; height: 36px; border-radius: var(--radius);
+      border: 1px solid rgba(245, 236, 216, 0.4); background: transparent;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 4px; cursor: pointer; padding: 0; flex: none;
+    }
+    .burger span { width: 17px; height: 2px; background: var(--cream); border-radius: 2px; transition: transform 0.25s ease, opacity 0.2s ease; }
+    .burger[aria-expanded="true"] span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    .burger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+    .burger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+    .mobile-menu {
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: var(--navy-deep); overflow: hidden; max-height: 0;
+      transition: max-height 0.28s ease;
+    }
+    .mobile-menu ul { list-style: none; margin: 0; padding: 0.4rem 0; }
+    .mobile-menu a, .mobile-menu button.menu-link {
+      display: block; width: 100%; text-align: left; background: none; border: none;
+      font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.03em;
+      font-size: 0.95rem; font-weight: 500; color: var(--cream); text-decoration: none;
+      padding: 0.9rem 1.25rem; border-top: 1px solid rgba(245, 236, 216, 0.08); cursor: pointer;
+    }
+    .mobile-menu li:first-child a { border-top: none; }
+
     @media (max-width: 760px) {
-      .nav a:not(.nav-cta) { display: none; }
+      .nav { display: none; }
       .nav-cta { font-size: 0.78rem; padding: 0.35rem 0.6rem; letter-spacing: 0.02em; }
-      .nav-legal { font-size: 0.68rem; padding: 0.32rem 0.55rem; }
+      .burger { display: flex; }
+      .mobile-menu { display: block; }
+      .mobile-menu.open { max-height: 400px; }
     }
     @media (max-width: 400px) {
       .nav-cta { font-size: 0.7rem; padding: 0.3rem 0.5rem; }
-      .nav-legal { font-size: 0.62rem; padding: 0.28rem 0.45rem; }
     }
 
     .pravni-dialog {
