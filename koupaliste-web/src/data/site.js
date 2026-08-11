@@ -89,6 +89,14 @@ export const site = {
 
   akce: [
     {
+      nazev: 'Putovní kino: Bardotky',
+      datum: '2026-08-12',
+      cas: '21:00',
+      popis: 'Vstupné 150 Kč, občerstvení zajištěno. Začátek promítání po setmění. Deky a dobrou náladu s sebou.',
+      fbUrl: null,
+      banner: '/akce/putovni-kino-bardotky.jpg',
+    },
+    {
       nazev: 'Na konci letního dne — 1. večer',
       datum: '2026-07-14',
       cas: '17:00',
