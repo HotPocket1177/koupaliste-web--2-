@@ -54,12 +54,12 @@ export const site = {
     },
     {
       nadpis: 'Limonády a míchané nápoje',
-      popis: 'Domácí limonády, nealko koktejly a osvěžení pro dospělé i děti.',
+      popis: 'Točené limonády Nektar Natura a míchané nápoje. Třeba Aperol, Hugo, gin & tonic a další.',
       znacka: null,
     },
     {
-      nadpis: 'Dezerty a drobné občerstvení',
-      popis: 'Něco sladkého ke kávě i něco slaného k pivu. Malé chody na zahánění hladu.',
+      nadpis: 'Jídlo a dezerty',
+      popis: 'Jídlo z vlastní výroby – například sekaná s čedarem v máslové housce nebo hranolky s čedarem a slaninou. A na sladkou tečku? Dezerty z vlastní výroby, které se průběžně obměňují.',
       znacka: null,
     },
   ],
