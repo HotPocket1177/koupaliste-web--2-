@@ -14,12 +14,29 @@ function formatDatum(iso) {
 const nadchazejici = (site.akce ?? [])
   .filter((a) => new Date(a.datum + 'T23:59:59') >= dnes)
   .sort((a, b) => a.datum.localeCompare(b.datum));
+
+const probehle = (site.akce ?? [])
+  .filter((a) => new Date(a.datum + 'T23:59:59') < dnes)
+  .sort((a, b) => b.datum.localeCompare(a.datum));
 ---
-{nadchazejici.length > 0 && (
+{(nadchazejici.length > 0 || site.akcePravidelne) && (
   <section id="akce" class="section section-cream">
     <div class="container">
       <p class="eyebrow">Co nás čeká</p>
       <h2>Akce u koupaliště</h2>
+
+      {site.akcePravidelne && (
+        <article class="akce-card akce-card-pravidelne">
+          <div class="akce-date akce-date-pravidelne" aria-hidden="true">
+            <span class="akce-tag">Pravidelně</span>
+          </div>
+          <div class="akce-body">
+            <h3>Sobotní ranní cvičení</h3>
+            <p class="akce-popis">{site.akcePravidelne}</p>
+          </div>
+        </article>
+      )}
+
       <div class="akce-list">
         {nadchazejici.map((a) => {
           const [r, m, d] = a.datum.split('-').map(Number);
@@ -30,7 +47,7 @@ const nadchazejici = (site.akce ?? [])
                 <span class="akce-mesic">{mesice[m - 1].slice(0, 3)}</span>
               </div>
               <div class="akce-body">
-                <h3>{a.nazev} {a.pravidelne && <span class="akce-tag">Pravidelně</span>}</h3>
+                <h3>{a.nazev}</h3>
                 <p class="akce-meta">
                   <time datetime={a.datum}>{formatDatum(a.datum)}</time>
                   {a.cas && <span class="akce-cas"> · {a.cas}</span>}
@@ -46,6 +63,38 @@ const nadchazejici = (site.akce ?? [])
           );
         })}
       </div>
+
+      {probehle.length > 0 && (
+        <details class="akce-archiv">
+          <summary>Proběhlé akce ({probehle.length})</summary>
+          <div class="akce-list">
+            {probehle.map((a) => {
+              const [r, m, d] = a.datum.split('-').map(Number);
+              return (
+                <article class="akce-card">
+                  <div class="akce-date" aria-hidden="true">
+                    <span class="akce-den">{d}</span>
+                    <span class="akce-mesic">{mesice[m - 1].slice(0, 3)}</span>
+                  </div>
+                  <div class="akce-body">
+                    <h3>{a.nazev}</h3>
+                    <p class="akce-meta">
+                      <time datetime={a.datum}>{formatDatum(a.datum)}</time>
+                      {a.cas && <span class="akce-cas"> · {a.cas}</span>}
+                    </p>
+                    <p class="akce-popis">{a.popis}</p>
+                    {a.fbUrl && (
+                      <a class="akce-fb" href={a.fbUrl} target="_blank" rel="noopener">
+                        Událost na Facebooku →
+                      </a>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </details>
+      )}
     </div>
 
     <style>
@@ -67,13 +116,6 @@ const nadchazejici = (site.akce ?? [])
       }
       .akce-body { padding: 1rem 1.2rem 1.1rem 0; }
       .akce-body h3 { color: var(--navy); margin-bottom: 0.15rem; }
-      .akce-tag {
-        display: inline-block; vertical-align: middle; margin-left: 0.4rem;
-        font-family: var(--font-display); text-transform: uppercase;
-        letter-spacing: 0.05em; font-size: 0.65rem; font-weight: 600;
-        color: var(--navy); background: var(--water-pale, #dce9f0);
-        border-radius: 999px; padding: 0.15rem 0.55rem;
-      }
       .akce-meta { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.82rem; color: var(--red); margin-bottom: 0.5rem; }
       .akce-cas { color: var(--red); }
       .akce-popis { margin: 0 0 0.6rem; color: #33405c; }
@@ -81,6 +123,20 @@ const nadchazejici = (site.akce ?? [])
         font-family: var(--font-display); text-transform: uppercase;
         letter-spacing: 0.05em; font-size: 0.85rem; font-weight: 600; color: var(--red);
       }
+      .akce-card-pravidelne { margin-top: 1.4rem; }
+      .akce-date-pravidelne { background: var(--red); }
+      .akce-tag {
+        font-family: var(--font-display); text-transform: uppercase;
+        letter-spacing: 0.05em; font-size: 0.72rem; font-weight: 600;
+        color: #fff; text-align: center;
+      }
+      .akce-archiv { margin-top: 1.6rem; }
+      .akce-archiv summary {
+        cursor: pointer; font-family: var(--font-display); text-transform: uppercase;
+        letter-spacing: 0.05em; font-size: 0.85rem; font-weight: 600; color: var(--navy);
+      }
+      .akce-archiv .akce-list { margin-top: 1rem; }
+      .akce-archiv .akce-card { opacity: 0.75; }
       @media (max-width: 560px) {
         .akce-card { flex-direction: column; }
         .akce-date { flex-direction: row; gap: 0.5rem; justify-content: flex-start; padding: 0.6rem 1.2rem; }

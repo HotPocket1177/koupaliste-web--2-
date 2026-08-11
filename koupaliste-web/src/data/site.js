@@ -85,6 +85,8 @@ export const site = {
   //
   //  Chceš-li sekci dočasně vypnout, smaž obsah pole: akce: []
   // ─────────────────────────────────────────────────────────────
+  akcePravidelne: 'Sobotní ranní cvičení s Martinou — každou sobotu 8:00–9:00 (120 Kč), do konce srpna. Protáhneme tělo, smočíme do vody, dáme kafe.',
+
   akce: [
     {
       nazev: 'Na konci letního dne — 1. večer',
@@ -143,43 +145,11 @@ export const site = {
       fbUrl: null,
     },
     {
-      nazev: 'Sobotní ráno s Martinou',
-      datum: '2026-08-08',
-      cas: '08:00',
-      popis: 'Druhé společné cvičení. Bez spěchu, jen ranní pohyb a dobrá nálada. Vítaný je každý.',
-      fbUrl: null,
-      pravidelne: true,
-    },
-    {
       nazev: 'Ty skály znáš',
       datum: '2026-08-11',
       cas: '17:30',
       popis: 'Vyprávění Miroslavy Moravcové o skalách, které máme za humny a přesto je neznáme.',
       fbUrl: null,
-    },
-    {
-      nazev: 'Sobotní ráno s Martinou',
-      datum: '2026-08-16',
-      cas: '08:00–09:00',
-      popis: 'Ranní cvičení na koupališti. Bez spěchu, jen pohyb, čerstvý vzduch a dobrá nálada. Vítaný je každý.',
-      fbUrl: null,
-      pravidelne: true,
-    },
-    {
-      nazev: 'Sobotní ráno s Martinou',
-      datum: '2026-08-23',
-      cas: '08:00–09:00',
-      popis: 'Ranní cvičení na koupališti. Bez spěchu, jen pohyb, čerstvý vzduch a dobrá nálada. Vítaný je každý.',
-      fbUrl: null,
-      pravidelne: true,
-    },
-    {
-      nazev: 'Sobotní ráno s Martinou',
-      datum: '2026-08-30',
-      cas: '08:00–09:00',
-      popis: 'Ranní cvičení na koupališti — poslední letošní. Bez spěchu, jen pohyb, čerstvý vzduch a dobrá nálada.',
-      fbUrl: null,
-      pravidelne: true,
     },
   ],
 };
