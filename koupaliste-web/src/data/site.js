@@ -148,6 +148,7 @@ export const site = {
       cas: '08:00',
       popis: 'Druhé společné cvičení. Bez spěchu, jen ranní pohyb a dobrá nálada. Vítaný je každý.',
       fbUrl: null,
+      pravidelne: true,
     },
     {
       nazev: 'Ty skály znáš',
@@ -162,6 +163,7 @@ export const site = {
       cas: '08:00–09:00',
       popis: 'Ranní cvičení na koupališti. Bez spěchu, jen pohyb, čerstvý vzduch a dobrá nálada. Vítaný je každý.',
       fbUrl: null,
+      pravidelne: true,
     },
     {
       nazev: 'Sobotní ráno s Martinou',
@@ -169,6 +171,7 @@ export const site = {
       cas: '08:00–09:00',
       popis: 'Ranní cvičení na koupališti. Bez spěchu, jen pohyb, čerstvý vzduch a dobrá nálada. Vítaný je každý.',
       fbUrl: null,
+      pravidelne: true,
     },
     {
       nazev: 'Sobotní ráno s Martinou',
@@ -176,6 +179,7 @@ export const site = {
       cas: '08:00–09:00',
       popis: 'Ranní cvičení na koupališti — poslední letošní. Bez spěchu, jen pohyb, čerstvý vzduch a dobrá nálada.',
       fbUrl: null,
+      pravidelne: true,
     },
   ],
 };
