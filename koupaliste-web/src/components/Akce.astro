@@ -26,15 +26,43 @@ const probehle = (site.akce ?? [])
       <h2>Akce u koupaliště</h2>
 
       {site.akcePravidelne && (
-        <article class="akce-card akce-card-pravidelne">
-          <div class="akce-date akce-date-pravidelne" aria-hidden="true">
-            <span class="akce-tag">Pravidelně</span>
-          </div>
-          <div class="akce-body">
-            <h3>Sobotní ranní cvičení</h3>
-            <p class="akce-popis">{site.akcePravidelne}</p>
-          </div>
-        </article>
+        site.akcePravidelne.banner ? (
+          <details class="akce-card akce-card-pravidelne akce-card-plakat">
+            <summary>
+              <div class="akce-date akce-date-pravidelne" aria-hidden="true">
+                <span class="akce-tag">Pravidelně</span>
+              </div>
+              <div class="akce-body">
+                <h3>
+                  Sobotní ranní cvičení
+                  <span class="akce-plakat-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M3 16l5-4 4 3 3-2 6 5"/></svg>
+                    Plakát
+                  </span>
+                </h3>
+                <p class="akce-popis">{site.akcePravidelne.text}</p>
+              </div>
+              <div class="akce-chevron" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
+            </summary>
+            <div class="akce-poster-wrap">
+              <button type="button" class="akce-poster-btn" data-src={site.akcePravidelne.banner} data-alt="Plakát — Sobotní ráno na koupališti">
+                <img class="akce-poster" src={site.akcePravidelne.banner} alt="Plakát — Sobotní ráno na koupališti" loading="lazy" />
+              </button>
+            </div>
+          </details>
+        ) : (
+          <article class="akce-card akce-card-pravidelne">
+            <div class="akce-date akce-date-pravidelne" aria-hidden="true">
+              <span class="akce-tag">Pravidelně</span>
+            </div>
+            <div class="akce-body">
+              <h3>Sobotní ranní cvičení</h3>
+              <p class="akce-popis">{site.akcePravidelne.text}</p>
+            </div>
+          </article>
+        )
       )}
 
       <div class="akce-list">

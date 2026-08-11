@@ -113,7 +113,10 @@ export const site = {
   //
   //  Chceš-li sekci dočasně vypnout, smaž obsah pole: akce: []
   // ─────────────────────────────────────────────────────────────
-  akcePravidelne: 'Sobotní ranní cvičení s Martinou — každou sobotu 8:00–9:00 (120 Kč), do konce srpna. Protáhneme tělo, smočíme do vody, dáme kafe.',
+  akcePravidelne: {
+    text: 'Sobotní ranní cvičení s Martinou Chrástkovou — každou sobotu 8:00–9:00 (120 Kč), do konce srpna. Protáhneme tělo. Skočíme do vody. Dáme kafe.',
+    banner: '/akce/sobotni-rano-martina.png',
+  },
 
   akce: [
     {
@@ -123,6 +126,14 @@ export const site = {
       popis: 'Vstupné 150 Kč, občerstvení zajištěno. Začátek promítání po setmění. Deky a dobrou náladu s sebou.',
       fbUrl: null,
       banner: '/akce/putovni-kino-bardotky.jpg',
+    },
+    {
+      nazev: 'Portal Pockets',
+      datum: '2026-08-12',
+      cas: '16:00–17:00',
+      popis: 'Na konci letního dne: studentská rocková kapela na koupališti.',
+      fbUrl: null,
+      banner: '/akce/portal-pockets.jpg',
     },
     {
       nazev: 'Na konci letního dne — 1. večer',
@@ -187,6 +198,14 @@ export const site = {
       popis: 'Vyprávění Miroslavy Moravcové o skalách, které máme za humny a přesto je neznáme.',
       fbUrl: null,
       banner: '/akce/ty-skaly-znas.jpg',
+    },
+    {
+      nazev: 'Krvesay',
+      datum: '2026-08-20',
+      cas: 'od 17:00',
+      popis: 'Na konci letního dne: country, folk a big beat. Vstupné dobrovolné. V případě deště se akce nekoná.',
+      fbUrl: null,
+      banner: '/akce/krvesay.jpg',
     },
   ],
 };
