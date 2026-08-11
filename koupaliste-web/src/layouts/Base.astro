@@ -4,7 +4,7 @@ import { site } from '../data/site.js';
 
 const { title, description } = Astro.props;
 const pageTitle = title ? `${title} — ${site.nazev}` : `${site.nazev} — ${site.podtitul}`;
-const desc = description ?? `${site.nazev} v ${site.podtitul}. ${site.slogan} Výběrová káva, čepované pivo, zmrzlina a osvěžení u vody.`;
+const desc = description ?? `${site.nazev} v ${site.podtitul}. ${site.slogan} Výběrová káva, čepované pivo, nanuky a osvěžení u vody.`;
 
 // Odkaz "Akce" v menu ukážeme jen když je aspoň jedna nadcházející akce.
 const dnesMenu = new Date(); dnesMenu.setHours(0,0,0,0);
