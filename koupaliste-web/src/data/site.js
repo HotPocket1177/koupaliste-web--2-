@@ -184,6 +184,7 @@ export const site = {
       cas: '17:30',
       popis: 'Vyprávění Miroslavy Moravcové o skalách, které máme za humny a přesto je neznáme.',
       fbUrl: null,
+      banner: '/akce/ty-skaly-znas.jpg',
     },
   ],
 };
