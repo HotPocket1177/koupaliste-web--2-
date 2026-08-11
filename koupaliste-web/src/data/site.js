@@ -38,6 +38,7 @@ export const site = {
       adresaRadky: ['Koupaliště Teplice nad Metují', '549 57 Teplice nad Metují'],
       idProvozovny: '1016230711',
       poznamka: 'Provozovna je vedena pro hostinskou činnost a prodej kvasného lihu, konzumního lihu a lihovin. Zahájení provozování je ve výpisu uvedeno 27. 6. 2026.',
+      vypisUrl: '/dokumenty/vypis-zivnostensky-rejstrik.pdf',
     },
     mimosoudniUvod: 'V případě, že mezi provozovatelem a spotřebitelem vznikne spotřebitelský spor z kupní smlouvy nebo ze smlouvy o poskytování služeb, který se nepodaří vyřešit vzájemnou dohodou, může spotřebitel podat návrh na mimosoudní řešení spotřebitelského sporu u příslušného subjektu:',
     coi: {
@@ -45,6 +46,7 @@ export const site = {
       oddeleni: 'Ústřední inspektorát – oddělení ADR',
       adresaRadky: ['Gorazdova 1969/24', '120 00 Praha 2'],
       email: 'adr@coi.gov.cz',
+      url: 'https://coi.gov.cz/informace-o-adr/',
     },
     ochranaSoukromi: 'Tyto webové stránky neshromažďují osobní údaje návštěvníků a nepoužívají analytické ani marketingové cookies.',
   },

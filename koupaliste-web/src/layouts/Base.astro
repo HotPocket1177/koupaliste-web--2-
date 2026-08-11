@@ -65,6 +65,9 @@ const maAkce = (site.akce ?? []).some((a) => new Date(a.datum + 'T23:59:59') >= 
         Identifikační číslo provozovny: {site.pravni.provozovna.idProvozovny}
       </p>
       <p>{site.pravni.provozovna.poznamka}</p>
+      {site.pravni.provozovna.vypisUrl && (
+        <p><a href={site.pravni.provozovna.vypisUrl} target="_blank" rel="noopener">Výpis z živnostenského rejstříku (PDF) →</a></p>
+      )}
 
       <h3>Mimosoudní řešení spotřebitelských sporů</h3>
       <p>{site.pravni.mimosoudniUvod}</p>
@@ -72,7 +75,10 @@ const maAkce = (site.akce ?? []).some((a) => new Date(a.datum + 'T23:59:59') >= 
         {site.pravni.coi.nazev}<br />
         {site.pravni.coi.oddeleni}<br />
         {site.pravni.coi.adresaRadky.map((r) => (<span>{r}<br /></span>))}
-        E-mail: <a href={`mailto:${site.pravni.coi.email}`}>{site.pravni.coi.email}</a>
+        E-mail: <a href={`mailto:${site.pravni.coi.email}`}>{site.pravni.coi.email}</a><br />
+        {site.pravni.coi.url && (
+          <a href={site.pravni.coi.url} target="_blank" rel="noopener">Mimosoudní řešení spotřebitelských sporů – ČOI →</a>
+        )}
       </p>
 
       <h3>Ochrana soukromí</h3>
