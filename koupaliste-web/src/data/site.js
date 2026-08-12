@@ -207,5 +207,13 @@ export const site = {
       fbUrl: null,
       banner: '/akce/krvesay.jpg',
     },
+    {
+      nazev: 'Skalní hrady a jejich příběhy',
+      datum: '2026-08-25',
+      cas: '17:30',
+      popis: 'Proč vznikly právě tady, kdo je obýval a kdo na nich možná straší dodnes. Vypráví Miroslava Moravcová.',
+      fbUrl: null,
+      banner: '/akce/skalni-hrady.png',
+    },
   ],
 };
