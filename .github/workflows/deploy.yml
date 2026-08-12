@@ -4,6 +4,9 @@ on:
   push:
     branches: [main, master]
   workflow_dispatch:
+  schedule:
+    # Denní rebuild, aby proběhlé akce samy spadly do archivu i bez nového pushe.
+    - cron: '15 3 * * *'
 
 permissions:
   contents: read
