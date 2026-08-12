@@ -11,6 +11,15 @@ function formatDatum(iso) {
   return `${d}. ${mesice[m - 1]} ${r}`;
 }
 
+// Stabilní kotva pro sdílení jednotlivé akce (odkaz na FB/IG → #akce-nazev).
+function slugify(str) {
+  return `akce-${str
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')}`;
+}
+
 const nadchazejici = (site.akce ?? [])
   .filter((a) => new Date(a.datum + 'T23:59:59') >= dnes)
   .sort((a, b) => a.datum.localeCompare(b.datum));
@@ -27,7 +36,11 @@ const probehle = (site.akce ?? [])
 
       {site.akcePravidelne && (
         site.akcePravidelne.banner ? (
-          <details class="akce-card akce-card-pravidelne akce-card-plakat">
+          <details class="akce-card akce-card-pravidelne akce-card-plakat" id="akce-pravidelne">
+            <button type="button" class="akce-link-btn" data-anchor="akce-pravidelne" aria-label="Zkopírovat odkaz na tuto akci">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </button>
+            <span class="akce-link-toast">Odkaz zkopírován</span>
             <summary>
               <div class="akce-date akce-date-pravidelne" aria-hidden="true">
                 <span class="akce-tag">Pravidelně</span>
@@ -53,7 +66,11 @@ const probehle = (site.akce ?? [])
             </div>
           </details>
         ) : (
-          <article class="akce-card akce-card-pravidelne">
+          <article class="akce-card akce-card-pravidelne" id="akce-pravidelne">
+            <button type="button" class="akce-link-btn" data-anchor="akce-pravidelne" aria-label="Zkopírovat odkaz na tuto akci">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </button>
+            <span class="akce-link-toast">Odkaz zkopírován</span>
             <div class="akce-date akce-date-pravidelne" aria-hidden="true">
               <span class="akce-tag">Pravidelně</span>
             </div>
@@ -68,6 +85,7 @@ const probehle = (site.akce ?? [])
       <div class="akce-list">
         {nadchazejici.map((a) => {
           const [r, m, d] = a.datum.split('-').map(Number);
+          const id = slugify(a.nazev);
           const hlava = (
             <>
               <div class="akce-date" aria-hidden="true">
@@ -97,8 +115,17 @@ const probehle = (site.akce ?? [])
               </div>
             </>
           );
+          const odkazBtn = (
+            <>
+              <button type="button" class="akce-link-btn" data-anchor={id} aria-label="Zkopírovat odkaz na tuto akci">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              </button>
+              <span class="akce-link-toast">Odkaz zkopírován</span>
+            </>
+          );
           return a.banner ? (
-            <details class="akce-card akce-card-plakat">
+            <details class="akce-card akce-card-plakat" id={id}>
+              {odkazBtn}
               <summary>
                 {hlava}
                 <div class="akce-chevron" aria-hidden="true">
@@ -112,7 +139,7 @@ const probehle = (site.akce ?? [])
               </div>
             </details>
           ) : (
-            <article class="akce-card">{hlava}</article>
+            <article class="akce-card" id={id}>{odkazBtn}{hlava}</article>
           );
         })}
       </div>
@@ -123,8 +150,13 @@ const probehle = (site.akce ?? [])
           <div class="akce-list">
             {probehle.map((a) => {
               const [r, m, d] = a.datum.split('-').map(Number);
+              const id = slugify(a.nazev);
               return (
-                <article class="akce-card">
+                <article class="akce-card" id={id}>
+                  <button type="button" class="akce-link-btn" data-anchor={id} aria-label="Zkopírovat odkaz na tuto akci">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                  </button>
+                  <span class="akce-link-toast">Odkaz zkopírován</span>
                   <div class="akce-date" aria-hidden="true">
                     <span class="akce-den">{d}</span>
                     <span class="akce-mesic">{mesice[m - 1].slice(0, 3)}</span>
@@ -185,15 +217,80 @@ const probehle = (site.akce ?? [])
         lightboxScroll?.scrollTo(0, 0);
         lightboxImg?.classList.remove('zoomed');
       });
+
+      // Kopírování přímého odkazu na jednotlivou akci (pro sdílení na FB/IG).
+      document.querySelectorAll('.akce-link-btn').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const anchor = btn.getAttribute('data-anchor');
+          if (!anchor) return;
+          const url = `${location.origin}${location.pathname}#${anchor}`;
+          try {
+            await navigator.clipboard.writeText(url);
+          } catch {
+            window.prompt('Zkopíruj odkaz:', url);
+          }
+          const toast = btn.nextElementSibling;
+          if (toast?.classList.contains('akce-link-toast')) {
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1800);
+          }
+        });
+      });
+
+      // Odkaz z FB/IG na konkrétní akci: rozbalí archiv/plakát, dojede na kartu a zvýrazní ji.
+      function otevriOdkazovanouAkci() {
+        const id = location.hash.slice(1);
+        if (!id) return;
+        const cil = document.getElementById(id);
+        if (!cil) return;
+        let el = cil;
+        while (el) {
+          if (el instanceof HTMLDetailsElement) el.open = true;
+          el = el.parentElement;
+        }
+        cil.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        cil.classList.remove('zvyrazneno');
+        void cil.offsetWidth;
+        cil.classList.add('zvyrazneno');
+      }
+      otevriOdkazovanouAkci();
+      window.addEventListener('hashchange', otevriOdkazovanouAkci);
     </script>
 
     <style>
       .akce-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.4rem; }
       .akce-card {
-        display: flex; gap: 1.2rem; align-items: stretch;
+        display: flex; gap: 1.2rem; align-items: stretch; position: relative;
         background: #fff; border-radius: var(--radius); box-shadow: var(--shadow);
         overflow: hidden;
       }
+      .akce-card:target,
+      .akce-card.zvyrazneno { animation: akce-zvyrazni 1s ease-out 2; }
+      @keyframes akce-zvyrazni {
+        0% { box-shadow: 0 0 0 0 rgba(212, 47, 47, 0.5); }
+        100% { box-shadow: 0 0 0 10px rgba(212, 47, 47, 0); }
+      }
+      .akce-link-btn {
+        position: absolute; top: 0.55rem; right: 0.55rem; z-index: 2;
+        width: 28px; height: 28px; border-radius: 50%; border: 1px solid #e4dcc8;
+        background: #fff; color: #8a8272; padding: 0;
+        display: flex; align-items: center; justify-content: center; cursor: pointer;
+      }
+      .akce-link-btn:hover { background: var(--water); color: var(--navy); border-color: var(--water); }
+      .akce-link-btn svg { width: 13px; height: 13px; }
+      /* details skrývá vše mimo <summary>, dokud není otevřený — tlačítko a bublinu chceme vidět vždy */
+      details.akce-card > .akce-link-btn,
+      details.akce-card > .akce-link-toast { display: flex; }
+      .akce-link-toast {
+        position: absolute; top: 0.55rem; right: 2.7rem; z-index: 2;
+        background: var(--navy); color: #fff; font-family: var(--font-display); text-transform: uppercase;
+        letter-spacing: 0.04em; font-size: 0.62rem; font-weight: 600; padding: 0.28rem 0.55rem; border-radius: 4px;
+        opacity: 0; transform: translateX(6px); transition: opacity 0.18s ease, transform 0.18s ease;
+        pointer-events: none; white-space: nowrap;
+      }
+      .akce-link-toast.show { opacity: 1; transform: translateX(0); }
       details.akce-card { display: block; }
       details.akce-card > summary {
         display: flex; gap: 1.2rem; align-items: stretch; cursor: pointer; list-style: none;
