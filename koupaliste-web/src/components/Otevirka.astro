@@ -55,7 +55,7 @@ const { dny, poznamka } = site.otevirka;
           const d = dny[(idx + step) % 7];
           if (d) { next = d; break; }
         }
-        detail.textContent = next ? `Další otevřeno: ${next.den} od ${next.od}.` : '';
+        detail.textContent = next ? `Znovu otevřeno bude: ${next.den} od ${next.od}.` : '';
       }
     }
   </script>
