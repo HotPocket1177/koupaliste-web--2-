@@ -1,6 +1,6 @@
 ---
 import { site } from '../data/site.js';
-const { dny, poznamka } = site.otevirka;
+const { dny, poznamka, vyjimecneZavreno } = site.otevirka;
 ---
 <section id="otevreno" class="section section-cream">
   <div class="container">
@@ -26,6 +26,13 @@ const { dny, poznamka } = site.otevirka;
         </tbody>
       </table>
     </div>
+
+    {vyjimecneZavreno && (
+      <div class="ot-vyjimka">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v5"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/></svg>
+        <p class="ot-vyjimka-text"><strong>Výjimečně zavřeno:</strong> {vyjimecneZavreno}</p>
+      </div>
+    )}
   </div>
   <script define:vars={{ dny }}>
     const mapJsToList = { 1:0, 2:1, 3:2, 4:3, 5:4, 6:5, 0:6 };
@@ -78,5 +85,13 @@ const { dny, poznamka } = site.otevirka;
     .ot-table tr.is-today { background: var(--water-pale); }
     .ot-table tr.is-today th, .ot-table tr.is-today td { font-weight: 700; }
     @media (max-width: 760px) { .ot-grid { grid-template-columns: 1fr; gap: 1.4rem; } }
+
+    .ot-vyjimka {
+      margin-top: 1.4rem; background: #fff; border: 1px solid var(--sand); border-left: 4px solid var(--red);
+      border-radius: var(--radius); padding: 0.9rem 1.1rem; display: flex; align-items: flex-start; gap: 0.7rem;
+    }
+    .ot-vyjimka svg { flex: none; width: 20px; height: 20px; color: var(--red); margin-top: 0.1rem; }
+    .ot-vyjimka-text { margin: 0; font-size: 0.94rem; }
+    .ot-vyjimka-text strong { color: var(--red-dark); font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.02em; font-size: 0.9rem; }
   </style>
 </section>

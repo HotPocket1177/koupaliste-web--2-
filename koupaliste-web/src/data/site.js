@@ -62,6 +62,7 @@ export const site = {
       { den: 'Sobota',  od: '11:00', do: '18:00' },
       { den: 'Neděle',  od: '11:00', do: '18:00' },
     ],
+    vyjimecneZavreno: '17.–19. 8. 2026',
   },
 
   nabidka: [
