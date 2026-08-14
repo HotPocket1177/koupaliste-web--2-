@@ -1,5 +1,6 @@
 ---
 import { site } from '../data/site.js';
+import { slugify } from '../utils/slug.js';
 
 // Zobraz jen akce, které ještě neproběhly (dnešek včetně), seřazené od nejbližší.
 const dnes = new Date();
@@ -9,15 +10,6 @@ const mesice = ['ledna','února','března','dubna','května','června','červenc
 function formatDatum(iso) {
   const [r, m, d] = iso.split('-').map(Number);
   return `${d}. ${mesice[m - 1]} ${r}`;
-}
-
-// Stabilní kotva pro sdílení jednotlivé akce (odkaz na FB/IG → #akce-nazev).
-function slugify(str) {
-  return `akce-${str
-    .toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')}`;
 }
 
 const nadchazejici = (site.akce ?? [])
@@ -37,7 +29,7 @@ const probehle = (site.akce ?? [])
       {site.akcePravidelne && (
         site.akcePravidelne.banner ? (
           <details class="akce-card akce-card-pravidelne akce-card-plakat" id="akce-pravidelne">
-            <button type="button" class="akce-link-btn" data-anchor="akce-pravidelne" aria-label="Zkopírovat odkaz na tuto akci">
+            <button type="button" class="akce-link-btn" data-slug="pravidelne" aria-label="Zkopírovat odkaz na tuto akci">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             </button>
             <span class="akce-link-toast">Odkaz zkopírován</span>
@@ -67,7 +59,7 @@ const probehle = (site.akce ?? [])
           </details>
         ) : (
           <article class="akce-card akce-card-pravidelne" id="akce-pravidelne">
-            <button type="button" class="akce-link-btn" data-anchor="akce-pravidelne" aria-label="Zkopírovat odkaz na tuto akci">
+            <button type="button" class="akce-link-btn" data-slug="pravidelne" aria-label="Zkopírovat odkaz na tuto akci">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             </button>
             <span class="akce-link-toast">Odkaz zkopírován</span>
@@ -85,7 +77,8 @@ const probehle = (site.akce ?? [])
       <div class="akce-list">
         {nadchazejici.map((a) => {
           const [r, m, d] = a.datum.split('-').map(Number);
-          const id = slugify(a.nazev);
+          const slug = slugify(a.nazev);
+          const id = `akce-${slug}`;
           const hlava = (
             <>
               <div class="akce-date" aria-hidden="true">
@@ -117,7 +110,7 @@ const probehle = (site.akce ?? [])
           );
           const odkazBtn = (
             <>
-              <button type="button" class="akce-link-btn" data-anchor={id} aria-label="Zkopírovat odkaz na tuto akci">
+              <button type="button" class="akce-link-btn" data-slug={slug} aria-label="Zkopírovat odkaz na tuto akci">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
               </button>
               <span class="akce-link-toast">Odkaz zkopírován</span>
@@ -150,10 +143,11 @@ const probehle = (site.akce ?? [])
           <div class="akce-list">
             {probehle.map((a) => {
               const [r, m, d] = a.datum.split('-').map(Number);
-              const id = slugify(a.nazev);
+              const slug = slugify(a.nazev);
+              const id = `akce-${slug}`;
               return (
                 <article class="akce-card" id={id}>
-                  <button type="button" class="akce-link-btn" data-anchor={id} aria-label="Zkopírovat odkaz na tuto akci">
+                  <button type="button" class="akce-link-btn" data-slug={slug} aria-label="Zkopírovat odkaz na tuto akci">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                   </button>
                   <span class="akce-link-toast">Odkaz zkopírován</span>
@@ -219,13 +213,15 @@ const probehle = (site.akce ?? [])
       });
 
       // Kopírování přímého odkazu na jednotlivou akci (pro sdílení na FB/IG).
+      // Vede na /akce/<slug>/ — samostatnou stránku se správným plakátem v náhledu,
+      // která rovnou přesměruje zpět na kartu akce na hlavní stránce.
       document.querySelectorAll('.akce-link-btn').forEach((btn) => {
         btn.addEventListener('click', async (e) => {
           e.preventDefault();
           e.stopPropagation();
-          const anchor = btn.getAttribute('data-anchor');
-          if (!anchor) return;
-          const url = `${location.origin}${location.pathname}#${anchor}`;
+          const slug = btn.getAttribute('data-slug');
+          if (!slug) return;
+          const url = `${location.origin}/akce/${slug}/`;
           try {
             await navigator.clipboard.writeText(url);
           } catch {

@@ -1,0 +1,85 @@
+---
+import '../../styles/global.css';
+import { site } from '../../data/site.js';
+import { slugify } from '../../utils/slug.js';
+
+export function getStaticPaths() {
+  const paths = (site.akce ?? []).map((a) => ({
+    params: { slug: slugify(a.nazev) },
+    props: { item: a },
+  }));
+
+  if (site.akcePravidelne) {
+    paths.push({
+      params: { slug: 'pravidelne' },
+      props: {
+        item: {
+          nazev: 'Sobotní ranní cvičení',
+          popis: site.akcePravidelne.text,
+          banner: site.akcePravidelne.banner,
+        },
+      },
+    });
+  }
+
+  return paths;
+}
+
+const { item } = Astro.props;
+const { slug } = Astro.params;
+
+const pageTitle = `${item.nazev} — ${site.nazev}`;
+const ogImage = new URL(item.banner ?? '/og.jpg', Astro.site).toString();
+const canonicalUrl = new URL(`akce/${slug}/`, Astro.site).toString();
+const homeAnchor = `/#akce-${slug}`;
+---
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{pageTitle}</title>
+  <meta name="description" content={item.popis} />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <meta property="og:title" content={pageTitle} />
+  <meta property="og:description" content={item.popis} />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content={ogImage} />
+  <meta property="og:url" content={canonicalUrl} />
+  <meta name="theme-color" content="#1b2f52" />
+  <link rel="canonical" href={canonicalUrl} />
+  <meta http-equiv="refresh" content={`0;url=${homeAnchor}`} />
+</head>
+<body>
+  <main class="redirect">
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="redirect-nazev">{item.nazev}</p>
+    <p class="redirect-text">Přesměrovávám na web koupaliště…</p>
+    <p class="redirect-fallback"><a href={homeAnchor}>Pokud se stránka nepřesměruje sama, klikni sem →</a></p>
+  </main>
+  <script define:vars={{ homeAnchor }}>
+    location.replace(homeAnchor);
+  </script>
+  <style>
+    body {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: var(--navy); color: var(--cream); text-align: center; padding: 2rem;
+    }
+    .redirect { max-width: 320px; }
+    .spinner {
+      width: 34px; height: 34px; border-radius: 50%; margin: 0 auto 1.2rem;
+      border: 3px solid rgba(245, 236, 216, 0.25); border-top-color: var(--red);
+      animation: spin 0.8s linear infinite;
+    }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .redirect-nazev {
+      font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.02em;
+      font-size: 1.1rem; color: #fff; margin: 0 0 0.4rem;
+    }
+    .redirect-text { font-size: 0.9rem; color: var(--water); margin: 0; }
+    .redirect-fallback { margin-top: 1.4rem; font-size: 0.82rem; }
+    .redirect-fallback a { color: var(--cream); }
+  </style>
+</body>
+</html>
