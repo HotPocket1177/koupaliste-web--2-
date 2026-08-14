@@ -10,12 +10,20 @@ function toIso(d) {
   const den = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${den}`;
 }
-const dnesBuild = new Date();
-dnesBuild.setHours(0, 0, 0, 0);
+// Pásek je vystředěný na výjimku: den před ní až den po ní (5 dní), ne na "dnešek" —
+// zůstane tak zobrazený pořád stejně, dokud se v site.js nezmění vyjimky.
+const vyjimkySeraz = [...vyjimkySet].sort();
+let zacatek;
+if (vyjimkySeraz.length > 0) {
+  zacatek = new Date(vyjimkySeraz[0] + 'T00:00:00');
+  zacatek.setDate(zacatek.getDate() - 1);
+} else {
+  zacatek = new Date();
+  zacatek.setHours(0, 0, 0, 0);
+}
 // Pondělí = 0 … neděle = 6 (JS getDay() má neděli jako 0).
-// 5 dní dopředu, ať se pásek na výšku na mobilu hezky vejde.
 const tyden = Array.from({ length: 5 }, (_, i) => {
-  const d = new Date(dnesBuild);
+  const d = new Date(zacatek);
   d.setDate(d.getDate() + i);
   const iso = toIso(d);
   return {
