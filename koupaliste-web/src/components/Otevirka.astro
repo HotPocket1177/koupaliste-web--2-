@@ -13,7 +13,8 @@ function toIso(d) {
 const dnesBuild = new Date();
 dnesBuild.setHours(0, 0, 0, 0);
 // Pondělí = 0 … neděle = 6 (JS getDay() má neděli jako 0).
-const tyden = Array.from({ length: 7 }, (_, i) => {
+// 5 dní dopředu, ať se pásek na výšku na mobilu hezky vejde.
+const tyden = Array.from({ length: 5 }, (_, i) => {
   const d = new Date(dnesBuild);
   d.setDate(d.getDate() + i);
   const iso = toIso(d);
