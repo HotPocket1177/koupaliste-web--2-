@@ -9,7 +9,16 @@ import { site } from '../data/site.js';
       {site.nabidka.map((item) => (
         <article class="nab-card">
           <h3>{item.nadpis}</h3>
-          {item.znacka && <span class="nab-znacka">{item.znacka}</span>}
+          {item.znacka && (
+            item.znackaUrl ? (
+              <a class="nab-znacka nab-znacka-link" href={item.znackaUrl} target="_blank" rel="noopener">
+                {item.znacka}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg>
+              </a>
+            ) : (
+              <span class="nab-znacka">{item.znacka}</span>
+            )
+          )}
           <p>{item.popis}</p>
         </article>
       ))}
@@ -23,6 +32,20 @@ import { site } from '../data/site.js';
     .nab-card { background: rgba(245, 236, 216, 0.07); border: 1px solid rgba(245, 236, 216, 0.16); border-radius: var(--radius); padding: 1.6rem 1.5rem; }
     .nab-card h3 { color: #fff; line-height: 1.28; letter-spacing: 0.015em; margin-bottom: 0.55rem; text-wrap: balance; }
     .nab-znacka { display: inline-block; font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.7rem; font-weight: 600; color: var(--navy); background: var(--water); padding: 0.18rem 0.6rem; border-radius: 2px; margin-bottom: 0.75rem; }
+    .nab-znacka-link {
+      position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.18rem 0.55rem 0.18rem 0.6rem; text-decoration: none; cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+    .nab-znacka-link svg { width: 10px; height: 10px; }
+    .nab-znacka-link:hover { transform: translateY(-2px); }
+    .nab-znacka-link::after {
+      content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+      background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+      animation: nab-znacka-shine 3.2s ease-in-out infinite;
+    }
+    @media (prefers-reduced-motion: reduce) { .nab-znacka-link::after { animation: none; } }
+    @keyframes nab-znacka-shine { 0% { left: -60%; } 35% { left: 130%; } 100% { left: 130%; } }
     .nab-card p { color: var(--water-pale); margin: 0; line-height: 1.62; font-size: 0.96rem; max-width: 34ch; }
     .vybaveni { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 2rem; }
     .chip { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.78rem; font-weight: 500; color: var(--cream); border: 1px solid rgba(245,236,216,0.28); padding: 0.3rem 0.75rem; border-radius: 100px; }

@@ -71,6 +71,7 @@ export const site = {
       nadpis: 'Výběrová káva Volkafe',
       popis: 'Čerstvě pražená zrna od naší pražírny. Espresso, filtr i ledová na horké dny.',
       znacka: 'Volkafe',
+      znackaUrl: 'https://volkafe.cz/',
     },
     {
       nadpis: 'Čepované pivo Opat',
