@@ -1,6 +1,29 @@
 ---
 import { site } from '../data/site.js';
-const { dny, poznamka } = site.otevirka;
+const { dny, poznamka, vyjimky } = site.otevirka;
+const vyjimkySet = new Set(vyjimky ?? []);
+
+const denZkr = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
+function toIso(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const den = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${den}`;
+}
+const dnesBuild = new Date();
+dnesBuild.setHours(0, 0, 0, 0);
+// Pondělí = 0 … neděle = 6 (JS getDay() má neděli jako 0).
+const tyden = Array.from({ length: 7 }, (_, i) => {
+  const d = new Date(dnesBuild);
+  d.setDate(d.getDate() + i);
+  const iso = toIso(d);
+  return {
+    iso,
+    den: denZkr[(d.getDay() + 6) % 7],
+    cislo: d.getDate(),
+    zavreno: vyjimkySet.has(iso),
+  };
+});
 ---
 <section id="otevreno" class="section section-cream">
   <div class="container">
@@ -25,6 +48,16 @@ const { dny, poznamka } = site.otevirka;
           ))}
         </tbody>
       </table>
+    </div>
+
+    <div class="ot-tyden">
+      {tyden.map((d) => (
+        <div class={`ot-den ${d.zavreno ? 'is-zavreno' : ''}`}>
+          <span class="ot-den-nazev">{d.den}</span>
+          <span class="ot-den-cislo">{d.cislo}</span>
+          <span class="ot-den-stav">{d.zavreno ? 'Zavřeno' : 'Otevřeno'}</span>
+        </div>
+      ))}
     </div>
   </div>
   <script define:vars={{ dny }}>
@@ -78,5 +111,18 @@ const { dny, poznamka } = site.otevirka;
     .ot-table tr.is-today { background: var(--water-pale); }
     .ot-table tr.is-today th, .ot-table tr.is-today td { font-weight: 700; }
     @media (max-width: 760px) { .ot-grid { grid-template-columns: 1fr; gap: 1.4rem; } }
+
+    .ot-tyden { display: flex; gap: 0.5rem; margin-top: 1.4rem; overflow-x: auto; padding-bottom: 0.2rem; }
+    .ot-den {
+      flex: 1 0 62px; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 0.55rem 0.3rem; text-align: center; display: flex; flex-direction: column; gap: 0.1rem;
+    }
+    .ot-den-nazev { font-family: var(--font-display); text-transform: uppercase; font-size: 0.62rem; letter-spacing: 0.04em; color: #8a8272; }
+    .ot-den-cislo { font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; color: var(--navy); line-height: 1.2; }
+    .ot-den-stav { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; color: #1a7a3c; }
+    .ot-den.is-zavreno { background: var(--red); }
+    .ot-den.is-zavreno .ot-den-nazev,
+    .ot-den.is-zavreno .ot-den-cislo { color: #fff; }
+    .ot-den.is-zavreno .ot-den-stav { color: #ffd9d9; }
   </style>
 </section>
