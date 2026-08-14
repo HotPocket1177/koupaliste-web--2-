@@ -62,7 +62,8 @@ export const site = {
       { den: 'Sobota',  od: '11:00', do: '18:00' },
       { den: 'Neděle',  od: '11:00', do: '18:00' },
     ],
-    vyjimecneZavreno: '17.–19. 8. 2026',
+    // Konkrétní dny, kdy je výjimečně zavřeno (bez ohledu na běžnou otevírací dobu).
+    vyjimky: ['2026-08-17', '2026-08-18', '2026-08-19'],
   },
 
   nabidka: [
