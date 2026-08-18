@@ -69,11 +69,19 @@ const tyden = Array.from({ length: 5 }, (_, i) => {
       ))}
     </div>
   </div>
-  <script define:vars={{ dny }}>
+  <script define:vars={{ dny, vyjimky }}>
     const mapJsToList = { 1:0, 2:1, 3:2, 4:3, 5:4, 6:5, 0:6 };
+    const vyjimkySet = new Set(vyjimky ?? []);
+    function toIso(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const den = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${den}`;
+    }
     const now = new Date();
     const idx = mapJsToList[now.getDay()];
     const dnesek = dny[idx];
+    const dnesVyjimka = vyjimkySet.has(toIso(now));
     const row = document.querySelector(`tr[data-day-index="${idx}"]`);
     if (row) row.classList.add('is-today');
     const badge = document.querySelector('[data-status]');
@@ -81,7 +89,7 @@ const tyden = Array.from({ length: 5 }, (_, i) => {
     const detail = document.querySelector('[data-status-detail]');
     function toMin(t) { const [h,m] = t.split(':').map(Number); return h*60+m; }
     const nowMin = now.getHours()*60 + now.getMinutes();
-    const otevreno = dnesek && nowMin >= toMin(dnesek.od) && nowMin < toMin(dnesek.do);
+    const otevreno = !dnesVyjimka && dnesek && nowMin >= toMin(dnesek.od) && nowMin < toMin(dnesek.do);
     if (otevreno) {
       badge.classList.add('is-open');
       text.textContent = 'Teď máme otevřeno';
@@ -89,13 +97,16 @@ const tyden = Array.from({ length: 5 }, (_, i) => {
     } else {
       badge.classList.add('is-closed');
       text.textContent = 'Právě zavřeno';
-      if (dnesek && nowMin < toMin(dnesek.od)) {
+      if (!dnesVyjimka && dnesek && nowMin < toMin(dnesek.od)) {
         detail.textContent = `Dnes otevíráme v ${dnesek.od}.`;
       } else {
+        // Hledej nejbližší budoucí den, který má otvírací dobu a zároveň není výjimečně zavřený.
         let next = null;
-        for (let step = 1; step <= 7; step++) {
-          const d = dny[(idx + step) % 7];
-          if (d) { next = d; break; }
+        for (let step = 1; step <= 14; step++) {
+          const d = new Date(now);
+          d.setDate(d.getDate() + step);
+          const kandidat = dny[mapJsToList[d.getDay()]];
+          if (kandidat && !vyjimkySet.has(toIso(d))) { next = kandidat; break; }
         }
         detail.textContent = next ? `Znovu otevřeno bude: ${next.den} od ${next.od}.` : '';
       }
