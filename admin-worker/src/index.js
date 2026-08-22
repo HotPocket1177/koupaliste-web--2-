@@ -270,7 +270,7 @@ function toIso(d) {
   const y = d.getFullYear();
   const m = String(d.getMonth()+1).padStart(2,'0');
   const day = String(d.getDate()).padStart(2,'0');
-  return \`\${y}-\${m}-\${day}\`;
+  return y + '-' + m + '-' + day;
 }
 
 function showToast(msg, isError) {
@@ -307,12 +307,12 @@ function renderStatus() {
   }
   const future = [...pending].filter((d) => d >= todayIso).sort();
   $('#status-sub').textContent = future.length
-    ? \`Nejbližší naplánovaná výjimka: \${future[0]}\`
+    ? 'Nejbližší naplánovaná výjimka: ' + future[0]
     : 'Žádná nadcházející výjimka';
 }
 
 function renderCalendar() {
-  $('#month-label-text').textContent = \`\${MONTHS[viewMonth.getMonth()]} \${viewMonth.getFullYear()}\`;
+  $('#month-label-text').textContent = MONTHS[viewMonth.getMonth()] + ' ' + viewMonth.getFullYear();
   const grid = $('#cal-grid');
   grid.innerHTML = '';
   DOW.forEach((d) => {
@@ -372,7 +372,7 @@ function renderList() {
     row.className = 'exception-row' + (isPendingState ? ' is-pending' : '');
     const span = document.createElement('span');
     span.className = 'x-date';
-    span.textContent = pending.has(iso) ? iso : \`\${iso} (bude odebráno)\`;
+    span.textContent = pending.has(iso) ? iso : iso + ' (bude odebráno)';
     const btn = document.createElement('button');
     btn.className = 'x-remove';
     btn.setAttribute('aria-label', 'Přepnout ' + iso);
