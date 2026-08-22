@@ -6,8 +6,10 @@
 const REPO_OWNER = 'HotPocket1177';
 const REPO_NAME = 'koupaliste-web--2-';
 const FILE_PATH = 'koupaliste-web/src/data/vyjimky.json';
+const ROZVRH_FILE_PATH = 'koupaliste-web/src/data/rozvrh.json';
 const BRANCH = 'master';
 const GITHUB_API = 'https://api.github.com';
+const DEN_NAZVY = ['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle'];
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -42,33 +44,60 @@ async function githubFetch(path, env, options = {}) {
   });
 }
 
-async function readExceptions(env) {
-  const res = await githubFetch(
-    `/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`,
-    env,
-  );
+async function readJsonFile(env, path) {
+  const res = await githubFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${BRANCH}`, env);
   if (!res.ok) throw new Error(`GitHub čtení selhalo (${res.status})`);
   const data = await res.json();
-  return { dates: JSON.parse(decodeBase64(data.content)), sha: data.sha };
+  return { value: JSON.parse(decodeBase64(data.content)), sha: data.sha };
+}
+
+async function writeJsonFile(env, path, value, sha, message) {
+  const content = encodeBase64(`${JSON.stringify(value, null, 2)}\n`);
+  const res = await githubFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, env, {
+    method: 'PUT',
+    body: JSON.stringify({ message, content, sha, branch: BRANCH }),
+  });
+  if (!res.ok) throw new Error(`GitHub zápis selhal (${res.status}): ${await res.text()}`);
+}
+
+async function readExceptions(env) {
+  const { value, sha } = await readJsonFile(env, FILE_PATH);
+  return { dates: value, sha };
 }
 
 async function writeExceptions(env, dates, sha) {
   const sorted = [...new Set(dates)].sort();
-  const content = encodeBase64(`${JSON.stringify(sorted, null, 2)}\n`);
-  const res = await githubFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, env, {
-    method: 'PUT',
-    body: JSON.stringify({
-      message: 'Admin: aktualizace výjimečných zavření',
-      content,
-      sha,
-      branch: BRANCH,
-    }),
-  });
-  if (!res.ok) throw new Error(`GitHub zápis selhal (${res.status}): ${await res.text()}`);
+  await writeJsonFile(env, FILE_PATH, sorted, sha, 'Admin: aktualizace výjimečných zavření');
   return sorted;
 }
 
+async function readRozvrh(env) {
+  const { value, sha } = await readJsonFile(env, ROZVRH_FILE_PATH);
+  return { days: value, sha };
+}
+
+async function writeRozvrh(env, days, sha) {
+  await writeJsonFile(env, ROZVRH_FILE_PATH, days, sha, 'Admin: aktualizace týdenního rozvrhu');
+  return days;
+}
+
 const ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_RE = /^\d{2}:\d{2}$/;
+
+function isValidRozvrh(days) {
+  return (
+    Array.isArray(days) &&
+    days.length === 7 &&
+    days.every(
+      (d, i) =>
+        d &&
+        d.den === DEN_NAZVY[i] &&
+        TIME_RE.test(d.od) &&
+        TIME_RE.test(d.do) &&
+        typeof d.zavreno === 'boolean',
+    )
+  );
+}
 
 // ── Rate limiting hesla ──
 // 5 chybných pokusů z jedné IP -> 15 minut blokace. Stav se drží v KV
@@ -148,6 +177,37 @@ export default {
         const { sha } = await readExceptions(env);
         const saved = await writeExceptions(env, body.dates, sha);
         return json({ ok: true, dates: saved });
+      } catch (e) {
+        return json({ error: String(e.message ?? e) }, 500);
+      }
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/rozvrh') {
+      try {
+        const { days } = await readRozvrh(env);
+        return json({ days });
+      } catch (e) {
+        return json({ error: String(e.message ?? e) }, 500);
+      }
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/rozvrh') {
+      if (await isLockedOut(env, ip)) {
+        return json({ error: LOCKOUT_MESSAGE }, 429);
+      }
+      const body = await request.json().catch(() => ({}));
+      if (body.password !== env.ADMIN_PASSWORD) {
+        await recordFailedAttempt(env, ip);
+        return json({ error: 'Špatné heslo.' }, 401);
+      }
+      await clearAttempts(env, ip);
+      if (!isValidRozvrh(body.days)) {
+        return json({ error: 'Neplatný formát rozvrhu.' }, 400);
+      }
+      try {
+        const { sha } = await readRozvrh(env);
+        const saved = await writeRozvrh(env, body.days, sha);
+        return json({ ok: true, days: saved });
       } catch (e) {
         return json({ error: String(e.message ?? e) }, 500);
       }
@@ -242,6 +302,30 @@ h1 { font-family: var(--font-display); text-transform: uppercase; font-size: 1.3
 .exception-row .x-remove:hover { background: rgba(212,47,47,0.12); color: var(--red); }
 .empty-note { font-size: 0.85rem; color: var(--ink-soft); text-align: center; padding: 0.6rem 0; }
 
+.time-input {
+  font-family: var(--font-mono); font-size: 0.85rem; padding: 0.4rem 0.5rem; border: 1px solid var(--line);
+  border-radius: 6px; background: var(--paper); color: var(--ink); width: 5.2rem; text-align: center;
+}
+.time-input:disabled { opacity: 0.35; background: transparent; }
+
+.quick-fill {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; background: var(--water-pale);
+  padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.78rem; color: var(--navy); margin-bottom: 0.8rem;
+}
+.quick-fill .time-input { background: #fff; }
+.quick-fill .btn-ghost { font-size: 0.68rem; padding: 0.35rem 0.6rem; margin-left: auto; }
+
+.day-table { display: flex; flex-direction: column; gap: 0.35rem; }
+.day-row {
+  display: grid; grid-template-columns: 2.6rem 1fr auto; align-items: center; gap: 0.6rem;
+  padding: 0.5rem 0.6rem; border-radius: 6px; border: 1px solid var(--line);
+}
+.day-row.is-off { background: rgba(212,47,47,0.05); }
+.day-name { font-family: var(--font-display); font-size: 0.82rem; font-weight: 600; }
+.time-range { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: var(--ink-soft); }
+.day-toggle { display: flex; align-items: center; gap: 0.35rem; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-soft); cursor: pointer; white-space: nowrap; }
+.day-toggle input { accent-color: var(--red); width: 14px; height: 14px; }
+
 .btn-row { display: flex; gap: 0.6rem; }
 .btn-row .btn { flex: 1; }
 #toast {
@@ -270,6 +354,22 @@ h1 { font-family: var(--font-display); text-transform: uppercase; font-size: 1.3
       <div>
         <div class="status-text" id="status-text">Načítám…</div>
         <div class="status-sub" id="status-sub"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="section-label">Otevírací doba</p>
+      <div class="quick-fill" id="quick-fill">
+        <span>Vyplnit stejně pro všechny dny:</span>
+        <input class="time-input" type="time" id="fill-od" value="11:00">
+        <span>–</span>
+        <input class="time-input" type="time" id="fill-do" value="18:00">
+        <button class="btn btn-ghost" id="fill-all-btn" type="button">Použít</button>
+      </div>
+      <div class="day-table" id="day-table"></div>
+      <div class="btn-row" style="margin-top: 1rem;">
+        <button class="btn btn-close" id="rozvrh-save-btn" disabled>Uložit rozvrh</button>
+        <button class="btn btn-ghost" id="rozvrh-discard-btn" disabled>Zahodit</button>
       </div>
     </div>
 
@@ -304,6 +404,8 @@ const MONTHS = ['leden','únor','březen','duben','květen','červen','červenec
 let password = sessionStorage.getItem('koupaliste-admin-pw') || '';
 let saved = new Set();
 let pending = new Set();
+let savedRozvrh = [];
+let pendingRozvrh = [];
 let viewMonth = new Date();
 viewMonth.setDate(1);
 viewMonth.setHours(0,0,0,0);
@@ -336,6 +438,78 @@ function updateButtons() {
   const dirty = isDirty();
   $('#save-btn').disabled = !dirty;
   $('#discard-btn').disabled = !dirty;
+}
+
+function isRozvrhDirty() {
+  return JSON.stringify(savedRozvrh) !== JSON.stringify(pendingRozvrh);
+}
+
+function updateRozvrhButtons() {
+  const dirty = isRozvrhDirty();
+  $('#rozvrh-save-btn').disabled = !dirty;
+  $('#rozvrh-discard-btn').disabled = !dirty;
+}
+
+function renderRozvrh() {
+  const table = $('#day-table');
+  table.innerHTML = '';
+  pendingRozvrh.forEach((d, i) => {
+    const row = document.createElement('div');
+    row.className = 'day-row' + (d.zavreno ? ' is-off' : '');
+
+    const name = document.createElement('span');
+    name.className = 'day-name';
+    name.textContent = DOW[i];
+
+    const range = document.createElement('span');
+    range.className = 'time-range';
+    const odInput = document.createElement('input');
+    odInput.type = 'time';
+    odInput.className = 'time-input';
+    odInput.value = d.od;
+    odInput.disabled = d.zavreno;
+    odInput.addEventListener('input', () => {
+      pendingRozvrh[i] = { ...pendingRozvrh[i], od: odInput.value };
+      updateRozvrhButtons();
+    });
+    const sep = document.createElement('span');
+    sep.textContent = '–';
+    const doInput = document.createElement('input');
+    doInput.type = 'time';
+    doInput.className = 'time-input';
+    doInput.value = d.do;
+    doInput.disabled = d.zavreno;
+    doInput.addEventListener('input', () => {
+      pendingRozvrh[i] = { ...pendingRozvrh[i], do: doInput.value };
+      updateRozvrhButtons();
+    });
+    range.append(odInput, sep, doInput);
+
+    const toggle = document.createElement('label');
+    toggle.className = 'day-toggle';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = !d.zavreno;
+    checkbox.addEventListener('change', () => {
+      pendingRozvrh[i] = { ...pendingRozvrh[i], zavreno: !checkbox.checked };
+      renderRozvrh();
+      updateRozvrhButtons();
+    });
+    toggle.append(checkbox, document.createTextNode('Otevřeno'));
+
+    row.append(name, range, toggle);
+    table.appendChild(row);
+  });
+}
+
+async function loadRozvrh() {
+  const res = await fetch('/api/rozvrh');
+  const data = await res.json();
+  if (data.error) { showToast(data.error, true); return; }
+  savedRozvrh = data.days;
+  pendingRozvrh = data.days.map((d) => ({ ...d }));
+  renderRozvrh();
+  updateRozvrhButtons();
 }
 
 function renderStatus() {
@@ -466,6 +640,7 @@ $('#login-btn').addEventListener('click', async () => {
   $('#gate').classList.add('is-hidden');
   $('#app').classList.add('is-visible');
   loadExceptions();
+  loadRozvrh();
 });
 
 $('#password').addEventListener('keydown', (e) => {
@@ -509,6 +684,44 @@ $('#save-btn').addEventListener('click', async () => {
   }
 });
 
+$('#fill-all-btn').addEventListener('click', () => {
+  const od = $('#fill-od').value;
+  const doo = $('#fill-do').value;
+  if (!od || !doo) return;
+  pendingRozvrh = pendingRozvrh.map((d) => ({ ...d, od, do: doo }));
+  renderRozvrh();
+  updateRozvrhButtons();
+});
+
+$('#rozvrh-discard-btn').addEventListener('click', () => {
+  pendingRozvrh = savedRozvrh.map((d) => ({ ...d }));
+  renderRozvrh();
+  updateRozvrhButtons();
+});
+
+$('#rozvrh-save-btn').addEventListener('click', async () => {
+  $('#rozvrh-save-btn').disabled = true;
+  $('#rozvrh-save-btn').textContent = 'Ukládám…';
+  try {
+    const res = await fetch('/api/rozvrh', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password, days: pendingRozvrh }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    savedRozvrh = data.days;
+    pendingRozvrh = data.days.map((d) => ({ ...d }));
+    renderRozvrh();
+    showToast('Rozvrh uložen. Na webu se projeví do ~1–2 minut.');
+  } catch (e) {
+    showToast(String(e.message ?? e), true);
+  } finally {
+    $('#rozvrh-save-btn').textContent = 'Uložit rozvrh';
+    updateRozvrhButtons();
+  }
+});
+
 // Pokud je heslo v sessionStorage z dřívějška, přeskoč rovnou dovnitř.
 if (password) {
   fetch('/api/verify', {
@@ -520,6 +733,7 @@ if (password) {
       $('#gate').classList.add('is-hidden');
       $('#app').classList.add('is-visible');
       loadExceptions();
+      loadRozvrh();
     } else {
       sessionStorage.removeItem('koupaliste-admin-pw');
     }

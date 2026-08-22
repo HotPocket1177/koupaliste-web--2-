@@ -3,8 +3,9 @@
 //  Uprav hodnoty níže; není třeba sahat do vzhledu ani kódu stránek.
 // ─────────────────────────────────────────────────────────────
 
-// Výjimečná zavření se editují přes admin (admin-worker/), který zapisuje
-// přímo do tohoto souboru přes GitHub API. Ruční úprava funguje taky.
+// Rozvrh i výjimečná zavření se editují přes admin (admin-worker/), který
+// zapisuje přímo do těchto souborů přes GitHub API. Ruční úprava funguje taky.
+import dny from './rozvrh.json';
 import vyjimky from './vyjimky.json';
 
 export const site = {
@@ -57,15 +58,8 @@ export const site = {
 
   otevirka: {
     poznamka: 'Provoz je sezónní a závisí na počasí. Aktuální info sledujte na Facebooku.',
-    dny: [
-      { den: 'Pondělí', od: '11:00', do: '18:00' },
-      { den: 'Úterý',   od: '11:00', do: '18:00' },
-      { den: 'Středa',  od: '11:00', do: '18:00' },
-      { den: 'Čtvrtek', od: '11:00', do: '18:00' },
-      { den: 'Pátek',   od: '11:00', do: '18:00' },
-      { den: 'Sobota',  od: '11:00', do: '18:00' },
-      { den: 'Neděle',  od: '11:00', do: '18:00' },
-    ],
+    // Týdenní rozvrh. Zdroj: src/data/rozvrh.json (viz admin-worker/ pro editaci přes web).
+    dny,
     // Konkrétní dny, kdy je výjimečně zavřeno (bez ohledu na běžnou otevírací dobu).
     // Zdroj: src/data/vyjimky.json (viz admin-worker/ pro editaci přes web).
     vyjimky,

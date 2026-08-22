@@ -26,11 +26,12 @@ const tyden = Array.from({ length: 5 }, (_, i) => {
   const d = new Date(zacatek);
   d.setDate(d.getDate() + i);
   const iso = toIso(d);
+  const denIndex = (d.getDay() + 6) % 7;
   return {
     iso,
-    den: denZkr[(d.getDay() + 6) % 7],
+    den: denZkr[denIndex],
     cislo: d.getDate(),
-    zavreno: vyjimkySet.has(iso),
+    zavreno: vyjimkySet.has(iso) || !!dny[denIndex]?.zavreno,
   };
 });
 ---
@@ -50,9 +51,9 @@ const tyden = Array.from({ length: 5 }, (_, i) => {
         <caption class="sr-only">Otevírací doba podle dnů</caption>
         <tbody>
           {dny.map((d, i) => (
-            <tr data-day-index={i}>
+            <tr data-day-index={i} class={d.zavreno ? 'is-zavreno' : ''}>
               <th scope="row">{d.den}</th>
-              <td>{d.od}–{d.do}</td>
+              <td>{d.zavreno ? 'Zavřeno' : `${d.od}–${d.do}`}</td>
             </tr>
           ))}
         </tbody>
@@ -89,7 +90,8 @@ const tyden = Array.from({ length: 5 }, (_, i) => {
     const detail = document.querySelector('[data-status-detail]');
     function toMin(t) { const [h,m] = t.split(':').map(Number); return h*60+m; }
     const nowMin = now.getHours()*60 + now.getMinutes();
-    const otevreno = !dnesVyjimka && dnesek && nowMin >= toMin(dnesek.od) && nowMin < toMin(dnesek.do);
+    const dnesZavreno = dnesVyjimka || !!(dnesek && dnesek.zavreno);
+    const otevreno = !dnesZavreno && dnesek && nowMin >= toMin(dnesek.od) && nowMin < toMin(dnesek.do);
     if (otevreno) {
       badge.classList.add('is-open');
       text.textContent = 'Teď máme otevřeno';
@@ -97,16 +99,16 @@ const tyden = Array.from({ length: 5 }, (_, i) => {
     } else {
       badge.classList.add('is-closed');
       text.textContent = 'Právě zavřeno';
-      if (!dnesVyjimka && dnesek && nowMin < toMin(dnesek.od)) {
+      if (!dnesZavreno && dnesek && nowMin < toMin(dnesek.od)) {
         detail.textContent = `Dnes otevíráme v ${dnesek.od}.`;
       } else {
-        // Hledej nejbližší budoucí den, který má otvírací dobu a zároveň není výjimečně zavřený.
+        // Hledej nejbližší budoucí den, který má otvírací dobu a zároveň není zavřený (rozvrhem ani výjimkou).
         let next = null;
         for (let step = 1; step <= 14; step++) {
           const d = new Date(now);
           d.setDate(d.getDate() + step);
           const kandidat = dny[mapJsToList[d.getDay()]];
-          if (kandidat && !vyjimkySet.has(toIso(d))) { next = kandidat; break; }
+          if (kandidat && !kandidat.zavreno && !vyjimkySet.has(toIso(d))) { next = kandidat; break; }
         }
         detail.textContent = next ? `Znovu otevřeno bude: ${next.den} od ${next.od}.` : '';
       }
@@ -130,6 +132,7 @@ const tyden = Array.from({ length: 5 }, (_, i) => {
     .ot-table tr:last-child th, .ot-table tr:last-child td { border-bottom: none; }
     .ot-table tr.is-today { background: var(--water-pale); }
     .ot-table tr.is-today th, .ot-table tr.is-today td { font-weight: 700; }
+    .ot-table tr.is-zavreno td { color: var(--red-dark); font-weight: 600; }
     @media (max-width: 760px) { .ot-grid { grid-template-columns: 1fr; gap: 1.4rem; } }
 
     .ot-tyden { display: flex; gap: 0.5rem; margin-top: 1.4rem; overflow-x: auto; padding-bottom: 0.2rem; }

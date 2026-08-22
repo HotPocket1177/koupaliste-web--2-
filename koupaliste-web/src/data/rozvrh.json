@@ -1,0 +1,9 @@
+[
+  { "den": "Pondělí", "od": "11:00", "do": "18:00", "zavreno": false },
+  { "den": "Úterý", "od": "11:00", "do": "18:00", "zavreno": false },
+  { "den": "Středa", "od": "11:00", "do": "18:00", "zavreno": false },
+  { "den": "Čtvrtek", "od": "11:00", "do": "18:00", "zavreno": false },
+  { "den": "Pátek", "od": "11:00", "do": "18:00", "zavreno": false },
+  { "den": "Sobota", "od": "11:00", "do": "18:00", "zavreno": false },
+  { "den": "Neděle", "od": "11:00", "do": "18:00", "zavreno": false }
+]
