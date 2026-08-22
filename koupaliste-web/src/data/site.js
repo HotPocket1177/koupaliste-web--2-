@@ -3,6 +3,10 @@
 //  Uprav hodnoty níže; není třeba sahat do vzhledu ani kódu stránek.
 // ─────────────────────────────────────────────────────────────
 
+// Výjimečná zavření se editují přes admin (admin-worker/), který zapisuje
+// přímo do tohoto souboru přes GitHub API. Ruční úprava funguje taky.
+import vyjimky from './vyjimky.json';
+
 export const site = {
   nazev: 'Kiosek koupaliště',
   podtitul: 'Teplice nad Metují',
@@ -63,7 +67,8 @@ export const site = {
       { den: 'Neděle',  od: '11:00', do: '18:00' },
     ],
     // Konkrétní dny, kdy je výjimečně zavřeno (bez ohledu na běžnou otevírací dobu).
-    vyjimky: ['2026-08-17', '2026-08-18', '2026-08-19'],
+    // Zdroj: src/data/vyjimky.json (viz admin-worker/ pro editaci přes web).
+    vyjimky,
   },
 
   nabidka: [

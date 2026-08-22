@@ -1,0 +1,7 @@
+name = "koupaliste-admin"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# Tajné hodnoty (GITHUB_TOKEN, ADMIN_PASSWORD) se nastavují přes
+# `npx wrangler secret put GITHUB_TOKEN` / `ADMIN_PASSWORD`, nikdy sem
+# do souboru — viz README.md.
