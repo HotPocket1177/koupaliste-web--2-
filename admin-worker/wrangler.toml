@@ -5,3 +5,8 @@ compatibility_date = "2024-11-01"
 # Tajné hodnoty (GITHUB_TOKEN, ADMIN_PASSWORD) se nastavují přes
 # `npx wrangler secret put GITHUB_TOKEN` / `ADMIN_PASSWORD`, nikdy sem
 # do souboru — viz README.md.
+
+# Drží počet chybných pokusů o heslo za IP (rate limiting přihlášení).
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "ae310a71a1ab464c96b45bc48bc962df"

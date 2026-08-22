@@ -70,17 +70,56 @@ async function writeExceptions(env, dates, sha) {
 
 const ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+// ── Rate limiting hesla ──
+// 5 chybných pokusů z jedné IP -> 15 minut blokace. Stav se drží v KV
+// (RATE_LIMIT binding), protože Worker běží na více edge lokacích a
+// paměť v procesu by se mezi nimi nesdílela.
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_SECONDS = 15 * 60;
+
+function clientIp(request) {
+  return request.headers.get('CF-Connecting-IP') || 'unknown';
+}
+
+async function isLockedOut(env, ip) {
+  const raw = await env.RATE_LIMIT.get(`rl:${ip}`);
+  if (!raw) return false;
+  const data = JSON.parse(raw);
+  return data.count >= MAX_ATTEMPTS;
+}
+
+async function recordFailedAttempt(env, ip) {
+  const key = `rl:${ip}`;
+  const raw = await env.RATE_LIMIT.get(key);
+  const data = raw ? JSON.parse(raw) : { count: 0 };
+  data.count += 1;
+  await env.RATE_LIMIT.put(key, JSON.stringify(data), { expirationTtl: LOCKOUT_SECONDS });
+}
+
+async function clearAttempts(env, ip) {
+  await env.RATE_LIMIT.delete(`rl:${ip}`);
+}
+
+const LOCKOUT_MESSAGE = 'Příliš mnoho chybných pokusů. Zkus to znovu za 15 minut.';
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const ip = clientIp(request);
 
     if (request.method === 'GET' && url.pathname === '/') {
       return new Response(ADMIN_HTML, { headers: { 'content-type': 'text/html; charset=utf-8' } });
     }
 
     if (request.method === 'POST' && url.pathname === '/api/verify') {
+      if (await isLockedOut(env, ip)) {
+        return json({ ok: false, error: LOCKOUT_MESSAGE }, 429);
+      }
       const body = await request.json().catch(() => ({}));
-      return json({ ok: body.password === env.ADMIN_PASSWORD });
+      const ok = body.password === env.ADMIN_PASSWORD;
+      if (ok) await clearAttempts(env, ip);
+      else await recordFailedAttempt(env, ip);
+      return json({ ok });
     }
 
     if (request.method === 'GET' && url.pathname === '/api/exceptions') {
@@ -93,10 +132,15 @@ export default {
     }
 
     if (request.method === 'POST' && url.pathname === '/api/exceptions') {
+      if (await isLockedOut(env, ip)) {
+        return json({ error: LOCKOUT_MESSAGE }, 429);
+      }
       const body = await request.json().catch(() => ({}));
       if (body.password !== env.ADMIN_PASSWORD) {
+        await recordFailedAttempt(env, ip);
         return json({ error: 'Špatné heslo.' }, 401);
       }
+      await clearAttempts(env, ip);
       if (!Array.isArray(body.dates) || !body.dates.every((d) => ISO_RE.test(d))) {
         return json({ error: 'Neplatný formát dat.' }, 400);
       }
@@ -414,7 +458,7 @@ $('#login-btn').addEventListener('click', async () => {
   });
   const data = await res.json();
   if (!data.ok) {
-    $('#gate-error').textContent = 'Špatné heslo, zkus to znovu.';
+    $('#gate-error').textContent = data.error || 'Špatné heslo, zkus to znovu.';
     return;
   }
   password = pw;
