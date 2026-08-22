@@ -303,8 +303,8 @@ h1 { font-family: var(--font-display); text-transform: uppercase; font-size: 1.3
 .empty-note { font-size: 0.85rem; color: var(--ink-soft); text-align: center; padding: 0.6rem 0; }
 
 .time-input {
-  font-family: var(--font-mono); font-size: 0.85rem; padding: 0.4rem 0.5rem; border: 1px solid var(--line);
-  border-radius: 6px; background: var(--paper); color: var(--ink); width: 5.2rem; text-align: center;
+  font-family: var(--font-mono); font-size: 0.9rem; padding: 0.5rem 0.4rem; border: 1px solid var(--line);
+  border-radius: 6px; background: var(--paper); color: var(--ink); flex: 1; min-width: 0; text-align: center;
 }
 .time-input:disabled { opacity: 0.35; background: transparent; }
 
@@ -312,19 +312,20 @@ h1 { font-family: var(--font-display); text-transform: uppercase; font-size: 1.3
   display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; background: var(--water-pale);
   padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.78rem; color: var(--navy); margin-bottom: 0.8rem;
 }
-.quick-fill .time-input { background: #fff; }
+.quick-fill .time-input { background: #fff; flex: 0 1 5.5rem; }
 .quick-fill .btn-ghost { font-size: 0.68rem; padding: 0.35rem 0.6rem; margin-left: auto; }
 
-.day-table { display: flex; flex-direction: column; gap: 0.35rem; }
+.day-table { display: flex; flex-direction: column; gap: 0.5rem; }
 .day-row {
-  display: grid; grid-template-columns: 2.6rem 1fr auto; align-items: center; gap: 0.6rem;
-  padding: 0.5rem 0.6rem; border-radius: 6px; border: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 0.5rem;
+  padding: 0.6rem 0.7rem; border-radius: 6px; border: 1px solid var(--line);
 }
 .day-row.is-off { background: rgba(212,47,47,0.05); }
-.day-name { font-family: var(--font-display); font-size: 0.82rem; font-weight: 600; }
-.time-range { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: var(--ink-soft); }
+.day-row-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.day-name { font-family: var(--font-display); font-size: 0.88rem; font-weight: 600; }
+.time-range { display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; color: var(--ink-soft); }
 .day-toggle { display: flex; align-items: center; gap: 0.35rem; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-soft); cursor: pointer; white-space: nowrap; }
-.day-toggle input { accent-color: var(--red); width: 14px; height: 14px; }
+.day-toggle input { accent-color: var(--red); width: 16px; height: 16px; flex-shrink: 0; }
 
 .btn-row { display: flex; gap: 0.6rem; }
 .btn-row .btn { flex: 1; }
@@ -457,11 +458,28 @@ function renderRozvrh() {
     const row = document.createElement('div');
     row.className = 'day-row' + (d.zavreno ? ' is-off' : '');
 
+    const head = document.createElement('div');
+    head.className = 'day-row-head';
+
     const name = document.createElement('span');
     name.className = 'day-name';
     name.textContent = DOW[i];
 
-    const range = document.createElement('span');
+    const toggle = document.createElement('label');
+    toggle.className = 'day-toggle';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = !d.zavreno;
+    checkbox.addEventListener('change', () => {
+      pendingRozvrh[i] = { ...pendingRozvrh[i], zavreno: !checkbox.checked };
+      renderRozvrh();
+      updateRozvrhButtons();
+    });
+    toggle.append(checkbox, document.createTextNode('Otevřeno'));
+
+    head.append(name, toggle);
+
+    const range = document.createElement('div');
     range.className = 'time-range';
     const odInput = document.createElement('input');
     odInput.type = 'time';
@@ -485,19 +503,7 @@ function renderRozvrh() {
     });
     range.append(odInput, sep, doInput);
 
-    const toggle = document.createElement('label');
-    toggle.className = 'day-toggle';
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.checked = !d.zavreno;
-    checkbox.addEventListener('change', () => {
-      pendingRozvrh[i] = { ...pendingRozvrh[i], zavreno: !checkbox.checked };
-      renderRozvrh();
-      updateRozvrhButtons();
-    });
-    toggle.append(checkbox, document.createTextNode('Otevřeno'));
-
-    row.append(name, range, toggle);
+    row.append(head, range);
     table.appendChild(row);
   });
 }
