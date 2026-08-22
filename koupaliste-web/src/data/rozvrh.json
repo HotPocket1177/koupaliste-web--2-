@@ -3,7 +3,7 @@
     "den": "Pondělí",
     "od": "11:00",
     "do": "18:00",
-    "zavreno": true
+    "zavreno": false
   },
   {
     "den": "Úterý",
