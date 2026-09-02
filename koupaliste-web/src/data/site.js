@@ -3,10 +3,12 @@
 //  Uprav hodnoty níže; není třeba sahat do vzhledu ani kódu stránek.
 // ─────────────────────────────────────────────────────────────
 
-// Rozvrh i výjimečná zavření se editují přes admin (admin-worker/), který
-// zapisuje přímo do těchto souborů přes GitHub API. Ruční úprava funguje taky.
+// Rozvrh, výjimečná zavření a akce se editují přes admin (admin-worker/),
+// který zapisuje přímo do těchto souborů přes GitHub API. Ruční úprava funguje taky.
 import dny from './rozvrh.json';
 import vyjimky from './vyjimky.json';
+import akce from './akce.json';
+import akcePravidelne from './akce-pravidelne.json';
 
 export const site = {
   nazev: 'Kiosek koupaliště',
@@ -107,115 +109,11 @@ export const site = {
 
   // ─────────────────────────────────────────────────────────────
   //  AKCE — sekce se na webu zobrazí jen když je tu aspoň jedna akce,
-  //  která ještě neproběhla. Proběhlé akce se automaticky skryjí.
-  //
-  //  datum:  'RRRR-MM-DD' (povinné, podle něj se řadí a skrývají staré)
-  //  cas:    volitelně, např. '18:00' nebo '14:00–22:00'
-  //  fbUrl:  volitelně, odkaz na událost na Facebooku (ručně zkopíruj z FB)
-  //
-  //  Chceš-li sekci dočasně vypnout, smaž obsah pole: akce: []
+  //  která ještě neproběhla, nebo aspoň jedna stálá (opakující se) akce.
+  //  Proběhlé akce s datem se automaticky skryjí do archivu.
+  //  Zdroj: src/data/akce.json (s datem) a src/data/akce-pravidelne.json
+  //  (opakující se) — viz admin-worker/ pro editaci přes web.
   // ─────────────────────────────────────────────────────────────
-  akcePravidelne: {
-    text: 'Sobotní ranní cvičení s Martinou Chrástkovou — každou sobotu 8:00–9:00 (120 Kč), do konce srpna. Protáhneme tělo. Skočíme do vody. Dáme kafe.',
-    banner: '/akce/sobotni-rano-martina.png',
-  },
-
-  akce: [
-    {
-      nazev: 'Putovní kino: Bardotky',
-      datum: '2026-08-12',
-      cas: '21:00',
-      popis: 'Vstupné 150 Kč, občerstvení zajištěno. Začátek promítání po setmění. Deky a dobrou náladu s sebou.',
-      fbUrl: null,
-      banner: '/akce/putovni-kino-bardotky.jpg',
-    },
-    {
-      nazev: 'Portal Pockets',
-      datum: '2026-08-12',
-      cas: '16:00–17:00',
-      popis: 'Na konci letního dne studentská rocková kapela na koupališti.',
-      fbUrl: null,
-      banner: '/akce/portal-pockets.jpg',
-    },
-    {
-      nazev: 'Na konci letního dne — 1. večer',
-      datum: '2026-07-14',
-      cas: '17:00',
-      popis: 'Vyprávění paní Miroslavy Moravcové: Jak pramen Antoníček přivedl lidi ke koupání.',
-      fbUrl: null,
-    },
-    {
-      nazev: 'Putovní kino: Někdo to rád v Plzni',
-      datum: '2026-07-15',
-      cas: '21:30',
-      popis: 'Promítání po setmění. Vstupné 100 Kč, občerstvení zajištěno v kiosku. Deky a dobrou náladu s sebou.',
-      fbUrl: null,
-    },
-    {
-      nazev: 'CHICO — žhavé rytmy flamenca',
-      datum: '2026-07-17',
-      cas: '17:00',
-      popis: 'Na konci letního dne flamenco trio na terase kiosku. Vstupné dobrovolné.',
-      fbUrl: null,
-    },
-    {
-      nazev: 'Café Baret',
-      datum: '2026-07-23',
-      cas: '17:00',
-      popis: 'Na konci letního dne živá hudba na terase Teplického koupaliště.',
-      fbUrl: null,
-    },
-    {
-      nazev: 'Na konci letního dne — 2. večer',
-      datum: '2026-07-28',
-      cas: '17:30',
-      popis: 'Vyprávění M. Moravcové: Osobnosti Teplic nad Metují do roku 1945.',
-      fbUrl: null,
-    },
-    {
-      nazev: 'Amatérský turnaj v KUBBU',
-      datum: '2026-08-02',
-      cas: 'od 13:00',
-      popis: 'Není potřeba umět hrát, stačí se netvářit moc důležitě. Přijďte si zahrát nebo jen fandit.',
-      fbUrl: null,
-    },
-    {
-      nazev: 'Putovní kino: POBERTA',
-      datum: '2026-08-05',
-      cas: '21:00',
-      popis: 'Promítání po setmění. Vstupné 100 Kč, občerstvení zajištěno v kiosku. Deky a dobrou náladu s sebou.',
-      fbUrl: null,
-    },
-    {
-      nazev: 'The Craic — v irském stylu',
-      datum: '2026-08-06',
-      cas: '16:00',
-      popis: 'Na konci letního dne tentokrát irsky. Živá hudba na Teplickém koupališti.',
-      fbUrl: null,
-    },
-    {
-      nazev: 'Ty skály znáš',
-      datum: '2026-08-11',
-      cas: '17:30',
-      popis: 'Vyprávění Miroslavy Moravcové o skalách, které máme za humny a přesto je neznáme.',
-      fbUrl: null,
-      banner: '/akce/ty-skaly-znas.jpg',
-    },
-    {
-      nazev: 'Krvesay',
-      datum: '2026-08-20',
-      cas: 'od 17:00',
-      popis: 'Na konci letního dne country, folk a big beat. Vstupné dobrovolné. V případě deště se akce nekoná.',
-      fbUrl: null,
-      banner: '/akce/krvesay.jpg',
-    },
-    {
-      nazev: 'Skalní hrady a jejich příběhy',
-      datum: '2026-08-25',
-      cas: '17:30',
-      popis: 'Proč vznikly právě tady, kdo je obýval a kdo na nich možná straší dodnes. Vypráví Miroslava Moravcová.',
-      fbUrl: null,
-      banner: '/akce/skalni-hrady.png',
-    },
-  ],
+  akcePravidelne,
+  akce,
 };
