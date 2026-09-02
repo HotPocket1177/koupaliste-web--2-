@@ -432,6 +432,15 @@ h1 { font-family: var(--font-display); text-transform: uppercase; font-size: 1.3
 #app.is-visible { display: flex; }
 #gate.is-hidden { display: none; }
 
+.main-nav { display: flex; gap: 0.4rem; background: var(--navy-deep); padding: 0.35rem; border-radius: 10px; }
+.main-nav-btn {
+  flex: 1; text-align: center; padding: 0.6rem 0.4rem; border-radius: 7px;
+  font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.04em;
+  font-size: 0.76rem; font-weight: 600; color: var(--water-pale); cursor: pointer;
+}
+.main-nav-btn.is-active { background: var(--red); color: #fff; }
+.main-section { display: flex; flex-direction: column; gap: 1.3rem; }
+
 .status-readout {
   display: flex; align-items: center; gap: 0.7rem; padding: 1rem 1.1rem; border-radius: var(--radius);
   background: var(--green-bg); border: 1px solid rgba(26,122,60,0.18);
@@ -585,59 +594,71 @@ h1 { font-family: var(--font-display); text-transform: uppercase; font-size: 1.3
       </div>
     </div>
 
-    <div class="card">
-      <p class="section-label">Otevírací doba</p>
-      <div class="quick-fill" id="quick-fill">
-        <span>Vyplnit stejně pro všechny dny:</span>
-        <input class="time-input" type="time" id="fill-od" value="11:00">
-        <span>–</span>
-        <input class="time-input" type="time" id="fill-do" value="18:00">
-        <button class="btn btn-ghost" id="fill-all-btn" type="button">Použít</button>
-      </div>
-      <div class="day-table" id="day-table"></div>
-      <div class="btn-row" style="margin-top: 1rem;">
-        <button class="btn btn-close" id="rozvrh-save-btn" disabled>Uložit rozvrh</button>
-        <button class="btn btn-ghost" id="rozvrh-discard-btn" disabled>Zahodit</button>
-      </div>
+    <div class="main-nav" id="main-nav">
+      <div class="main-nav-btn is-active" id="main-tab-rozvrh" data-section="rozvrh">Rozvrh</div>
+      <div class="main-nav-btn" id="main-tab-vyjimky" data-section="vyjimky">Výjimky</div>
+      <div class="main-nav-btn" id="main-tab-akce" data-section="akce">Akce</div>
     </div>
 
-    <div class="card">
-      <div class="section-label">
-        <span id="month-label-text"></span>
-        <div class="month-nav">
-          <button id="prev-month" aria-label="Předchozí měsíc">‹</button>
-          <button id="next-month" aria-label="Následující měsíc">›</button>
+    <div class="main-section" id="section-rozvrh">
+      <div class="card">
+        <p class="section-label">Otevírací doba</p>
+        <div class="quick-fill" id="quick-fill">
+          <span>Vyplnit stejně pro všechny dny:</span>
+          <input class="time-input" type="time" id="fill-od" value="11:00">
+          <span>–</span>
+          <input class="time-input" type="time" id="fill-do" value="18:00">
+          <button class="btn btn-ghost" id="fill-all-btn" type="button">Použít</button>
+        </div>
+        <div class="day-table" id="day-table"></div>
+        <div class="btn-row" style="margin-top: 1rem;">
+          <button class="btn btn-close" id="rozvrh-save-btn" disabled>Uložit rozvrh</button>
+          <button class="btn btn-ghost" id="rozvrh-discard-btn" disabled>Zahodit</button>
         </div>
       </div>
-      <div class="cal-grid" id="cal-grid"></div>
     </div>
 
-    <div class="card">
-      <p class="section-label">Zavřené dny</p>
-      <div class="exception-list" id="exception-list"></div>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn btn-close" id="save-btn" disabled>Uložit změny</button>
-      <button class="btn btn-ghost" id="discard-btn" disabled>Zahodit</button>
-    </div>
-
-    <div class="card">
-      <p class="section-label">Akce</p>
-      <div class="tabs">
-        <div class="tab is-active" id="tab-datovane" data-tab="datovane">Podle data<span class="count" id="count-datovane"></span></div>
-        <div class="tab" id="tab-pravidelne" data-tab="pravidelne">Stálé<span class="count" id="count-pravidelne"></span></div>
+    <div class="main-section" id="section-vyjimky" style="display:none;">
+      <div class="card">
+        <div class="section-label">
+          <span id="month-label-text"></span>
+          <div class="month-nav">
+            <button id="prev-month" aria-label="Předchozí měsíc">‹</button>
+            <button id="next-month" aria-label="Následující měsíc">›</button>
+          </div>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
       </div>
-      <div class="event-list" id="event-list-datovane"></div>
-      <button class="add-btn" id="add-datovane-btn" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-        Přidat akci s datem
-      </button>
-      <div class="event-list" id="event-list-pravidelne" style="display:none;"></div>
-      <button class="add-btn" id="add-pravidelne-btn" type="button" style="display:none;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-        Přidat stálou akci
-      </button>
+
+      <div class="card">
+        <p class="section-label">Zavřené dny</p>
+        <div class="exception-list" id="exception-list"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-close" id="save-btn" disabled>Uložit změny</button>
+        <button class="btn btn-ghost" id="discard-btn" disabled>Zahodit</button>
+      </div>
+    </div>
+
+    <div class="main-section" id="section-akce" style="display:none;">
+      <div class="card">
+        <p class="section-label">Akce</p>
+        <div class="tabs">
+          <div class="tab is-active" id="tab-datovane" data-tab="datovane">Podle data<span class="count" id="count-datovane"></span></div>
+          <div class="tab" id="tab-pravidelne" data-tab="pravidelne">Stálé<span class="count" id="count-pravidelne"></span></div>
+        </div>
+        <div class="event-list" id="event-list-datovane"></div>
+        <button class="add-btn" id="add-datovane-btn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Přidat akci s datem
+        </button>
+        <div class="event-list" id="event-list-pravidelne" style="display:none;"></div>
+        <button class="add-btn" id="add-pravidelne-btn" type="button" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Přidat stálou akci
+        </button>
+      </div>
     </div>
     <input type="file" id="plakat-file-input" accept="image/*" style="display:none;">
   </div>
@@ -1188,6 +1209,25 @@ function switchTab(tab) {
   $('#event-list-pravidelne').style.display = tab === 'pravidelne' ? '' : 'none';
   $('#add-pravidelne-btn').style.display = tab === 'pravidelne' ? '' : 'none';
 }
+
+function switchSection(section) {
+  ['rozvrh', 'vyjimky', 'akce'].forEach((s) => {
+    $('#main-tab-' + s).classList.toggle('is-active', s === section);
+    $('#section-' + s).style.display = s === section ? '' : 'none';
+  });
+  try { sessionStorage.setItem('koupaliste-admin-section', section); } catch {}
+}
+
+$('#main-tab-rozvrh').addEventListener('click', () => switchSection('rozvrh'));
+$('#main-tab-vyjimky').addEventListener('click', () => switchSection('vyjimky'));
+$('#main-tab-akce').addEventListener('click', () => switchSection('akce'));
+
+try {
+  const storedSection = sessionStorage.getItem('koupaliste-admin-section');
+  if (storedSection === 'rozvrh' || storedSection === 'vyjimky' || storedSection === 'akce') {
+    switchSection(storedSection);
+  }
+} catch {}
 
 $('#tab-datovane').addEventListener('click', () => switchTab('datovane'));
 $('#tab-pravidelne').addEventListener('click', () => switchTab('pravidelne'));
