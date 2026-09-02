@@ -7,6 +7,9 @@ const REPO_OWNER = 'HotPocket1177';
 const REPO_NAME = 'koupaliste-web--2-';
 const FILE_PATH = 'koupaliste-web/src/data/vyjimky.json';
 const ROZVRH_FILE_PATH = 'koupaliste-web/src/data/rozvrh.json';
+const AKCE_FILE_PATH = 'koupaliste-web/src/data/akce.json';
+const AKCE_PRAVIDELNE_FILE_PATH = 'koupaliste-web/src/data/akce-pravidelne.json';
+const PLAKAT_DIR = 'koupaliste-web/static/akce';
 const BRANCH = 'master';
 const GITHUB_API = 'https://api.github.com';
 const DEN_NAZVY = ['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle'];
@@ -81,8 +84,54 @@ async function writeRozvrh(env, days, sha) {
   return days;
 }
 
+async function readAkce(env) {
+  const { value, sha } = await readJsonFile(env, AKCE_FILE_PATH);
+  return { events: value, sha };
+}
+
+async function writeAkce(env, events, sha) {
+  await writeJsonFile(env, AKCE_FILE_PATH, events, sha, 'Admin: aktualizace akcí');
+  return events;
+}
+
+async function readAkcePravidelne(env) {
+  const { value, sha } = await readJsonFile(env, AKCE_PRAVIDELNE_FILE_PATH);
+  return { events: value, sha };
+}
+
+async function writeAkcePravidelne(env, events, sha) {
+  await writeJsonFile(env, AKCE_PRAVIDELNE_FILE_PATH, events, sha, 'Admin: aktualizace stálých akcí');
+  return events;
+}
+
+// Zjistí sha existujícího souboru (potřeba pro update), nebo null když ještě neexistuje.
+async function getFileSha(env, path) {
+  const res = await githubFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${BRANCH}`, env);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`GitHub čtení selhalo (${res.status})`);
+  const data = await res.json();
+  return data.sha;
+}
+
+async function uploadPlakat(env, filename, contentBase64) {
+  const path = `${PLAKAT_DIR}/${filename}`;
+  const sha = await getFileSha(env, path);
+  const res = await githubFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, env, {
+    method: 'PUT',
+    body: JSON.stringify({
+      message: `Admin: ${sha ? 'aktualizace' : 'nahrání'} plakátu ${filename}`,
+      content: contentBase64,
+      sha: sha ?? undefined,
+      branch: BRANCH,
+    }),
+  });
+  if (!res.ok) throw new Error(`GitHub zápis selhal (${res.status}): ${await res.text()}`);
+  return `/akce/${filename}`;
+}
+
 const ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^\d{2}:\d{2}$/;
+const SLUG_RE = /^[a-z0-9-]+\.jpg$/;
 
 function isValidRozvrh(days) {
   return (
@@ -95,6 +144,39 @@ function isValidRozvrh(days) {
         TIME_RE.test(d.od) &&
         TIME_RE.test(d.do) &&
         typeof d.zavreno === 'boolean',
+    )
+  );
+}
+
+function isNonEmptyString(v) {
+  return typeof v === 'string' && v.trim().length > 0;
+}
+
+function isValidAkce(events) {
+  return (
+    Array.isArray(events) &&
+    events.every(
+      (a) =>
+        a &&
+        isNonEmptyString(a.nazev) &&
+        ISO_RE.test(a.datum) &&
+        (a.cas === null || typeof a.cas === 'string') &&
+        typeof a.popis === 'string' &&
+        (a.fbUrl === null || typeof a.fbUrl === 'string') &&
+        (a.banner === null || typeof a.banner === 'string'),
+    )
+  );
+}
+
+function isValidAkcePravidelne(events) {
+  return (
+    Array.isArray(events) &&
+    events.every(
+      (p) =>
+        p &&
+        isNonEmptyString(p.nazev) &&
+        typeof p.text === 'string' &&
+        (p.banner === null || typeof p.banner === 'string'),
     )
   );
 }
@@ -208,6 +290,93 @@ export default {
         const { sha } = await readRozvrh(env);
         const saved = await writeRozvrh(env, body.days, sha);
         return json({ ok: true, days: saved });
+      } catch (e) {
+        return json({ error: String(e.message ?? e) }, 500);
+      }
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/akce') {
+      try {
+        const { events } = await readAkce(env);
+        return json({ events });
+      } catch (e) {
+        return json({ error: String(e.message ?? e) }, 500);
+      }
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/akce') {
+      if (await isLockedOut(env, ip)) {
+        return json({ error: LOCKOUT_MESSAGE }, 429);
+      }
+      const body = await request.json().catch(() => ({}));
+      if (body.password !== env.ADMIN_PASSWORD) {
+        await recordFailedAttempt(env, ip);
+        return json({ error: 'Špatné heslo.' }, 401);
+      }
+      await clearAttempts(env, ip);
+      if (!isValidAkce(body.events)) {
+        return json({ error: 'Neplatný formát akcí.' }, 400);
+      }
+      try {
+        const { sha } = await readAkce(env);
+        const saved = await writeAkce(env, body.events, sha);
+        return json({ ok: true, events: saved });
+      } catch (e) {
+        return json({ error: String(e.message ?? e) }, 500);
+      }
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/akce-pravidelne') {
+      try {
+        const { events } = await readAkcePravidelne(env);
+        return json({ events });
+      } catch (e) {
+        return json({ error: String(e.message ?? e) }, 500);
+      }
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/akce-pravidelne') {
+      if (await isLockedOut(env, ip)) {
+        return json({ error: LOCKOUT_MESSAGE }, 429);
+      }
+      const body = await request.json().catch(() => ({}));
+      if (body.password !== env.ADMIN_PASSWORD) {
+        await recordFailedAttempt(env, ip);
+        return json({ error: 'Špatné heslo.' }, 401);
+      }
+      await clearAttempts(env, ip);
+      if (!isValidAkcePravidelne(body.events)) {
+        return json({ error: 'Neplatný formát stálých akcí.' }, 400);
+      }
+      try {
+        const { sha } = await readAkcePravidelne(env);
+        const saved = await writeAkcePravidelne(env, body.events, sha);
+        return json({ ok: true, events: saved });
+      } catch (e) {
+        return json({ error: String(e.message ?? e) }, 500);
+      }
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/upload-plakat') {
+      if (await isLockedOut(env, ip)) {
+        return json({ error: LOCKOUT_MESSAGE }, 429);
+      }
+      const body = await request.json().catch(() => ({}));
+      if (body.password !== env.ADMIN_PASSWORD) {
+        await recordFailedAttempt(env, ip);
+        return json({ error: 'Špatné heslo.' }, 401);
+      }
+      await clearAttempts(env, ip);
+      if (!SLUG_RE.test(body.filename || '') || !isNonEmptyString(body.contentBase64)) {
+        return json({ error: 'Neplatný soubor.' }, 400);
+      }
+      // Zhruba omez velikost base64 dat (~6 MB), i když klient posílá už zmenšený obrázek.
+      if (body.contentBase64.length > 8_000_000) {
+        return json({ error: 'Obrázek je příliš velký.' }, 400);
+      }
+      try {
+        const banner = await uploadPlakat(env, body.filename, body.contentBase64);
+        return json({ ok: true, banner });
       } catch (e) {
         return json({ error: String(e.message ?? e) }, 500);
       }
@@ -336,6 +505,64 @@ h1 { font-family: var(--font-display); text-transform: uppercase; font-size: 1.3
 }
 #toast.is-visible { transform: translateX(-50%) translateY(0); }
 #toast.is-error { background: var(--red-dark); }
+
+.tabs { display: flex; gap: 0.4rem; background: var(--water-pale); padding: 0.3rem; border-radius: 8px; margin-bottom: 0.9rem; }
+.tab { flex: 1; text-align: center; padding: 0.5rem 0.4rem; border-radius: 6px; font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.03em; font-size: 0.72rem; font-weight: 600; color: var(--navy); cursor: pointer; }
+.tab.is-active { background: #fff; box-shadow: var(--shadow); }
+.tab .count { font-family: var(--font-mono); font-weight: 500; opacity: 0.6; margin-left: 0.25rem; }
+
+.event-list { display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 0.8rem; }
+.event-card { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.event-row { display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0.7rem; cursor: pointer; }
+.event-thumb {
+  width: 42px; height: 42px; border-radius: 6px; flex-shrink: 0; background: var(--water-pale);
+  display: flex; align-items: center; justify-content: center; color: var(--navy); overflow: hidden;
+  background-size: cover; background-position: center;
+}
+.event-thumb svg { width: 16px; height: 16px; opacity: 0.5; }
+.event-meta { flex: 1; min-width: 0; }
+.event-title { font-family: var(--font-display); font-size: 0.86rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; }
+.event-date { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-soft); }
+.event-actions { display: flex; gap: 0.35rem; flex-shrink: 0; }
+.icon-btn {
+  width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--line); background: #fff;
+  display: flex; align-items: center; justify-content: center; color: var(--ink-soft); cursor: pointer;
+}
+.icon-btn svg { width: 13px; height: 13px; }
+.icon-btn.danger:hover { background: rgba(212,47,47,0.1); color: var(--red); border-color: rgba(212,47,47,0.3); }
+.icon-btn.edit.is-active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+.event-edit { border-top: 1px solid var(--line); padding: 0.9rem 0.8rem 1rem; background: var(--paper); display: flex; flex-direction: column; gap: 0.7rem; }
+.field { display: flex; flex-direction: column; gap: 0.3rem; }
+.field label { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.62rem; font-weight: 600; color: var(--ink-soft); }
+.field input, .field textarea {
+  font-family: var(--font-body); font-size: 0.85rem; padding: 0.55rem 0.6rem; border: 1px solid var(--line);
+  border-radius: 6px; background: #fff; color: var(--ink); width: 100%;
+}
+.field textarea { resize: vertical; min-height: 3.6em; font-family: var(--font-body); }
+.field-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.field-row .field { flex: 1; min-width: 8rem; }
+
+.dropzone {
+  border: 1.5px dashed var(--line); border-radius: 8px; padding: 0.8rem; display: flex; align-items: center; gap: 0.7rem;
+  background: #fff; cursor: pointer;
+}
+.dropzone-preview { width: 44px; height: 44px; border-radius: 6px; background: var(--water-pale); flex-shrink: 0; overflow: hidden; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; color: var(--navy); }
+.dropzone-preview svg { width: 16px; height: 16px; opacity: 0.5; }
+.dropzone-text { flex: 1; font-size: 0.78rem; color: var(--ink-soft); }
+.dropzone-text strong { color: var(--ink); display: block; font-size: 0.82rem; }
+.dropzone-remove { font-size: 0.7rem; color: var(--red); text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; flex-shrink: 0; }
+
+.edit-actions { display: flex; gap: 0.5rem; margin-top: 0.2rem; }
+.edit-actions .btn { flex: 1; }
+
+.add-btn { display: flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.75rem; border: 1.5px dashed var(--line); border-radius: 10px; color: var(--navy); font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.76rem; font-weight: 600; cursor: pointer; background: none; width: 100%; }
+.add-btn svg { width: 13px; height: 13px; }
+
+.confirm-strip { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; background: rgba(212,47,47,0.08); border: 1px solid rgba(212,47,47,0.25); border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 0.8rem; color: var(--red-dark); }
+.confirm-strip .btn { padding: 0.4rem 0.7rem; font-size: 0.68rem; flex-shrink: 0; }
+
+.badge-recurring { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.58rem; font-weight: 600; color: var(--navy); background: var(--water); padding: 0.12rem 0.4rem; border-radius: 3px; margin-left: 0.4rem; }
 </style>
 </head>
 <body>
@@ -394,6 +621,25 @@ h1 { font-family: var(--font-display); text-transform: uppercase; font-size: 1.3
       <button class="btn btn-close" id="save-btn" disabled>Uložit změny</button>
       <button class="btn btn-ghost" id="discard-btn" disabled>Zahodit</button>
     </div>
+
+    <div class="card">
+      <p class="section-label">Akce</p>
+      <div class="tabs">
+        <div class="tab is-active" id="tab-datovane" data-tab="datovane">Podle data<span class="count" id="count-datovane"></span></div>
+        <div class="tab" id="tab-pravidelne" data-tab="pravidelne">Stálé<span class="count" id="count-pravidelne"></span></div>
+      </div>
+      <div class="event-list" id="event-list-datovane"></div>
+      <button class="add-btn" id="add-datovane-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Přidat akci s datem
+      </button>
+      <div class="event-list" id="event-list-pravidelne" style="display:none;"></div>
+      <button class="add-btn" id="add-pravidelne-btn" type="button" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Přidat stálou akci
+      </button>
+    </div>
+    <input type="file" id="plakat-file-input" accept="image/*" style="display:none;">
   </div>
 </div>
 <div id="toast"></div>
@@ -410,6 +656,18 @@ let pendingRozvrh = [];
 let viewMonth = new Date();
 viewMonth.setDate(1);
 viewMonth.setHours(0,0,0,0);
+
+let akce = [];
+let pravidelne = [];
+let akceEditIndex = null;
+let akceDeleteIndex = null;
+let akceDraft = null;
+let akcePoster = null;
+let pravEditIndex = null;
+let pravDeleteIndex = null;
+let pravDraft = null;
+let pravPoster = null;
+let uploadTarget = null;
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -516,6 +774,453 @@ async function loadRozvrh() {
   pendingRozvrh = data.days.map((d) => ({ ...d }));
   renderRozvrh();
   updateRozvrhButtons();
+}
+
+// ── Akce (s datem i stálé) ──
+
+function slugify(str) {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function formatCzDate(iso) {
+  const months = ['ledna','února','března','dubna','května','června','července','srpna','září','října','listopadu','prosince'];
+  const parts = iso.split('-');
+  const y = Number(parts[0]);
+  const m = Number(parts[1]);
+  const d = Number(parts[2]);
+  return d + '. ' + months[m - 1] + ' ' + y;
+}
+
+function resizeImageToBase64(file, maxWidth) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob((blob) => {
+          if (!blob) { reject(new Error('Obrázek se nepodařilo zpracovat.')); return; }
+          const fr = new FileReader();
+          fr.onload = () => resolve(String(fr.result));
+          fr.onerror = () => reject(new Error('Obrázek se nepodařilo zpracovat.'));
+          fr.readAsDataURL(blob);
+        }, 'image/jpeg', 0.85);
+      };
+      img.onerror = () => reject(new Error('Soubor není platný obrázek.'));
+      img.src = String(reader.result);
+    };
+    reader.onerror = () => reject(new Error('Soubor se nepodařilo načíst.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function blankAkce() {
+  const t = new Date();
+  const iso = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+  return { nazev: '', datum: iso, cas: '', popis: '', fbUrl: null, banner: null };
+}
+
+function blankPrav() {
+  return { nazev: '', text: '', banner: null };
+}
+
+function currentDraft(kind) { return kind === 'akce' ? akceDraft : pravDraft; }
+function currentPoster(kind) { return kind === 'akce' ? akcePoster : pravPoster; }
+function setPoster(kind, value) { if (kind === 'akce') akcePoster = value; else pravPoster = value; }
+
+function displayBanner(kind) {
+  const draft = currentDraft(kind);
+  const pending = currentPoster(kind);
+  if (pending === 'remove') return null;
+  if (pending && pending.dataUrl) return pending.dataUrl;
+  return draft ? draft.banner : null;
+}
+
+function toggleEdit(kind, index) {
+  const current = kind === 'akce' ? akceEditIndex : pravEditIndex;
+  if (current === index) { cancelEdit(kind); return; }
+  const list = kind === 'akce' ? akce : pravidelne;
+  const freshDraft = index === 'new'
+    ? (kind === 'akce' ? blankAkce() : blankPrav())
+    : Object.assign({}, list[index]);
+  if (kind === 'akce') {
+    akceEditIndex = index;
+    akceDraft = freshDraft;
+    akceDeleteIndex = null;
+    akcePoster = null;
+  } else {
+    pravEditIndex = index;
+    pravDraft = freshDraft;
+    pravDeleteIndex = null;
+    pravPoster = null;
+  }
+  rerenderBoth();
+}
+
+function cancelEdit(kind) {
+  if (kind === 'akce') { akceEditIndex = null; akceDraft = null; akcePoster = null; }
+  else { pravEditIndex = null; pravDraft = null; pravPoster = null; }
+  rerenderBoth();
+}
+
+function toggleDelete(kind, index) {
+  if (kind === 'akce') {
+    akceDeleteIndex = akceDeleteIndex === index ? null : index;
+    if (akceEditIndex === index) { akceEditIndex = null; akceDraft = null; akcePoster = null; }
+  } else {
+    pravDeleteIndex = pravDeleteIndex === index ? null : index;
+    if (pravEditIndex === index) { pravEditIndex = null; pravDraft = null; pravPoster = null; }
+  }
+  rerenderBoth();
+}
+
+async function deleteItem(kind, index) {
+  try {
+    const list = (kind === 'akce' ? akce : pravidelne).slice();
+    list.splice(index, 1);
+    const endpoint = kind === 'akce' ? '/api/akce' : '/api/akce-pravidelne';
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: password, events: list }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (kind === 'akce') {
+      akce = data.events; akceDeleteIndex = null; akceEditIndex = null; akceDraft = null; akcePoster = null;
+    } else {
+      pravidelne = data.events; pravDeleteIndex = null; pravEditIndex = null; pravDraft = null; pravPoster = null;
+    }
+    rerenderBoth();
+    showToast('Akce smazána. Na webu se projeví do ~1–2 minut.');
+  } catch (err) {
+    showToast(String(err.message || err), true);
+  }
+}
+
+async function saveEdit(kind, index, btn) {
+  const draft = currentDraft(kind);
+  if (!draft.nazev || !draft.nazev.trim()) { showToast('Vyplň název akce.', true); return; }
+  if (kind === 'akce' && !draft.datum) { showToast('Vyplň datum akce.', true); return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Ukládám…'; }
+  try {
+    let banner = draft.banner ?? null;
+    const pendingImg = currentPoster(kind);
+    if (pendingImg === 'remove') {
+      banner = null;
+    } else if (pendingImg && pendingImg.dataUrl) {
+      const filename = slugify(draft.nazev) + '.jpg';
+      const base64 = pendingImg.dataUrl.split(',')[1];
+      const uploadRes = await fetch('/api/upload-plakat', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ password: password, filename: filename, contentBase64: base64 }),
+      });
+      const uploadData = await uploadRes.json();
+      if (uploadData.error) throw new Error(uploadData.error);
+      banner = uploadData.banner;
+    }
+    const finalItem = kind === 'akce'
+      ? { nazev: draft.nazev.trim(), datum: draft.datum, cas: draft.cas || null, popis: draft.popis || '', fbUrl: draft.fbUrl || null, banner: banner }
+      : { nazev: draft.nazev.trim(), text: draft.text || '', banner: banner };
+    const list = (kind === 'akce' ? akce : pravidelne).slice();
+    if (index === 'new') list.push(finalItem); else list[index] = finalItem;
+    const endpoint = kind === 'akce' ? '/api/akce' : '/api/akce-pravidelne';
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: password, events: list }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (kind === 'akce') {
+      akce = data.events; akceEditIndex = null; akceDraft = null; akcePoster = null;
+    } else {
+      pravidelne = data.events; pravEditIndex = null; pravDraft = null; pravPoster = null;
+    }
+    rerenderBoth();
+    showToast('Uloženo. Na webu se projeví do ~1–2 minut.');
+  } catch (err) {
+    showToast(String(err.message || err), true);
+    if (btn) { btn.disabled = false; btn.textContent = 'Uložit'; }
+  }
+}
+
+function buildField(labelText, value, onInput, type, placeholder) {
+  const field = document.createElement('div');
+  field.className = 'field';
+  const label = document.createElement('label');
+  label.textContent = labelText;
+  const input = document.createElement('input');
+  input.type = type || 'text';
+  input.value = value;
+  if (placeholder) input.placeholder = placeholder;
+  input.addEventListener('input', () => onInput(input.value));
+  field.append(label, input);
+  return field;
+}
+
+function buildTextareaField(labelText, value, onInput) {
+  const field = document.createElement('div');
+  field.className = 'field';
+  const label = document.createElement('label');
+  label.textContent = labelText;
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.addEventListener('input', () => onInput(textarea.value));
+  field.append(label, textarea);
+  return field;
+}
+
+function buildPlakatField(kind) {
+  const field = document.createElement('div');
+  field.className = 'field';
+  const label = document.createElement('label');
+  label.textContent = 'Plakát';
+  const dz = document.createElement('div');
+  dz.className = 'dropzone';
+  const preview = document.createElement('div');
+  preview.className = 'dropzone-preview';
+  const banner = displayBanner(kind);
+  if (banner) {
+    preview.style.backgroundImage = 'url("' + banner + '")';
+  } else {
+    preview.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M3 16l5-4 4 3 3-2 6 5"/></svg>';
+  }
+  const text = document.createElement('div');
+  text.className = 'dropzone-text';
+  const strong = document.createElement('strong');
+  strong.textContent = banner ? 'Plakát nahraný' : 'Žádný plakát';
+  const hint = document.createElement('span');
+  hint.textContent = 'Klikni pro nahrání / výměnu';
+  text.append(strong, hint);
+  dz.append(preview, text);
+  if (banner) {
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'dropzone-remove';
+    removeBtn.textContent = 'Odebrat';
+    removeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setPoster(kind, 'remove');
+      rerenderBoth();
+    });
+    dz.appendChild(removeBtn);
+  }
+  dz.addEventListener('click', () => {
+    uploadTarget = kind;
+    $('#plakat-file-input').click();
+  });
+  field.append(label, dz);
+  return field;
+}
+
+function buildEditForm(kind, index) {
+  const draft = currentDraft(kind);
+  const wrap = document.createElement('div');
+  wrap.className = 'event-edit';
+
+  wrap.appendChild(buildField('Název', draft.nazev || '', (v) => { draft.nazev = v; }));
+
+  if (kind === 'akce') {
+    const row = document.createElement('div');
+    row.className = 'field-row';
+    row.appendChild(buildField('Datum', draft.datum || '', (v) => { draft.datum = v; }, 'date'));
+    row.appendChild(buildField('Čas', draft.cas || '', (v) => { draft.cas = v || null; }, 'text', 'např. 18:00 nebo od 17:00'));
+    wrap.appendChild(row);
+    wrap.appendChild(buildTextareaField('Popis', draft.popis || '', (v) => { draft.popis = v; }));
+    wrap.appendChild(buildField('Odkaz na Facebook (volitelné)', draft.fbUrl || '', (v) => { draft.fbUrl = v || null; }, 'text', 'https://facebook.com/...'));
+  } else {
+    wrap.appendChild(buildTextareaField('Text', draft.text || '', (v) => { draft.text = v; }));
+  }
+
+  wrap.appendChild(buildPlakatField(kind));
+
+  const actions = document.createElement('div');
+  actions.className = 'edit-actions';
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'btn btn-close';
+  saveBtn.textContent = 'Uložit';
+  saveBtn.addEventListener('click', () => saveEdit(kind, index, saveBtn));
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'btn btn-ghost';
+  cancelBtn.textContent = 'Zrušit';
+  cancelBtn.addEventListener('click', () => cancelEdit(kind));
+  actions.append(saveBtn, cancelBtn);
+  wrap.appendChild(actions);
+
+  return wrap;
+}
+
+function buildDeleteConfirm(kind, item, index) {
+  const wrap = document.createElement('div');
+  wrap.className = 'event-edit';
+  wrap.style.paddingTop = '0.7rem';
+  const strip = document.createElement('div');
+  strip.className = 'confirm-strip';
+  const msg = document.createElement('span');
+  msg.textContent = 'Smazat "' + item.nazev + '" natrvalo?';
+  const btns = document.createElement('div');
+  btns.style.display = 'flex';
+  btns.style.gap = '0.4rem';
+  const cancel = document.createElement('button');
+  cancel.className = 'btn btn-ghost';
+  cancel.textContent = 'Zrušit';
+  cancel.addEventListener('click', () => { toggleDelete(kind, index); });
+  const confirmBtn = document.createElement('button');
+  confirmBtn.className = 'btn btn-close';
+  confirmBtn.textContent = 'Smazat';
+  confirmBtn.addEventListener('click', () => deleteItem(kind, index));
+  btns.append(cancel, confirmBtn);
+  strip.append(msg, btns);
+  wrap.appendChild(strip);
+  return wrap;
+}
+
+function buildCard(kind, item, index) {
+  const isNew = index === 'new';
+  const editIndex = kind === 'akce' ? akceEditIndex : pravEditIndex;
+  const deleteIndex = kind === 'akce' ? akceDeleteIndex : pravDeleteIndex;
+  const isEditing = editIndex === index;
+  const isDeleting = deleteIndex === index;
+
+  const card = document.createElement('div');
+  card.className = 'event-card';
+
+  const row = document.createElement('div');
+  row.className = 'event-row';
+  row.addEventListener('click', (e) => {
+    if (e.target.closest && e.target.closest('.icon-btn')) return;
+    toggleEdit(kind, index);
+  });
+
+  const thumb = document.createElement('div');
+  thumb.className = 'event-thumb';
+  const banner = isEditing ? displayBanner(kind) : item.banner;
+  if (banner) {
+    thumb.style.backgroundImage = 'url("' + banner + '")';
+  } else {
+    thumb.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>';
+  }
+
+  const meta = document.createElement('div');
+  meta.className = 'event-meta';
+  const title = document.createElement('div');
+  title.className = 'event-title';
+  const titleText = document.createElement('span');
+  titleText.textContent = isNew ? 'Nová akce' : item.nazev;
+  title.appendChild(titleText);
+  if (kind === 'pravidelne') {
+    const badge = document.createElement('span');
+    badge.className = 'badge-recurring';
+    badge.textContent = 'Pravidelně';
+    title.appendChild(badge);
+  }
+  meta.appendChild(title);
+  if (kind === 'akce' && !isNew) {
+    const dateEl = document.createElement('div');
+    dateEl.className = 'event-date';
+    dateEl.textContent = formatCzDate(item.datum) + (item.cas ? ' · ' + item.cas : '');
+    meta.appendChild(dateEl);
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'event-actions';
+  if (!isNew) {
+    const editBtn = document.createElement('div');
+    editBtn.className = 'icon-btn edit' + (isEditing ? ' is-active' : '');
+    editBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4v16h16v-7M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>';
+    editBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleEdit(kind, index); });
+    const delBtn = document.createElement('div');
+    delBtn.className = 'icon-btn danger';
+    delBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>';
+    delBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleDelete(kind, index); });
+    actions.append(editBtn, delBtn);
+  }
+
+  row.append(thumb, meta, actions);
+  card.appendChild(row);
+
+  if (isDeleting) card.appendChild(buildDeleteConfirm(kind, item, index));
+  if (isEditing) card.appendChild(buildEditForm(kind, index));
+
+  return card;
+}
+
+function renderAkceList() {
+  const container = $('#event-list-datovane');
+  container.innerHTML = '';
+  $('#count-datovane').textContent = String(akce.length);
+  akce.forEach((a, i) => container.appendChild(buildCard('akce', a, i)));
+  if (akceEditIndex === 'new') container.appendChild(buildCard('akce', akceDraft, 'new'));
+}
+
+function renderPravList() {
+  const container = $('#event-list-pravidelne');
+  container.innerHTML = '';
+  $('#count-pravidelne').textContent = String(pravidelne.length);
+  pravidelne.forEach((p, i) => container.appendChild(buildCard('pravidelne', p, i)));
+  if (pravEditIndex === 'new') container.appendChild(buildCard('pravidelne', pravDraft, 'new'));
+}
+
+function rerenderBoth() {
+  renderAkceList();
+  renderPravList();
+}
+
+function switchTab(tab) {
+  $('#tab-datovane').classList.toggle('is-active', tab === 'datovane');
+  $('#tab-pravidelne').classList.toggle('is-active', tab === 'pravidelne');
+  $('#event-list-datovane').style.display = tab === 'datovane' ? '' : 'none';
+  $('#add-datovane-btn').style.display = tab === 'datovane' ? '' : 'none';
+  $('#event-list-pravidelne').style.display = tab === 'pravidelne' ? '' : 'none';
+  $('#add-pravidelne-btn').style.display = tab === 'pravidelne' ? '' : 'none';
+}
+
+$('#tab-datovane').addEventListener('click', () => switchTab('datovane'));
+$('#tab-pravidelne').addEventListener('click', () => switchTab('pravidelne'));
+$('#add-datovane-btn').addEventListener('click', () => toggleEdit('akce', 'new'));
+$('#add-pravidelne-btn').addEventListener('click', () => toggleEdit('pravidelne', 'new'));
+
+$('#plakat-file-input').addEventListener('change', async (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!file || !uploadTarget) return;
+  try {
+    const dataUrl = await resizeImageToBase64(file, 1200);
+    setPoster(uploadTarget, { dataUrl: dataUrl });
+    rerenderBoth();
+  } catch (err) {
+    showToast(String(err.message || err), true);
+  }
+});
+
+async function loadAkce() {
+  const res = await fetch('/api/akce');
+  const data = await res.json();
+  if (data.error) { showToast(data.error, true); return; }
+  akce = data.events;
+  renderAkceList();
+}
+
+async function loadAkcePravidelne() {
+  const res = await fetch('/api/akce-pravidelne');
+  const data = await res.json();
+  if (data.error) { showToast(data.error, true); return; }
+  pravidelne = data.events;
+  renderPravList();
 }
 
 function renderStatus() {
@@ -647,6 +1352,8 @@ $('#login-btn').addEventListener('click', async () => {
   $('#app').classList.add('is-visible');
   loadExceptions();
   loadRozvrh();
+  loadAkce();
+  loadAkcePravidelne();
 });
 
 $('#password').addEventListener('keydown', (e) => {
@@ -740,6 +1447,8 @@ if (password) {
       $('#app').classList.add('is-visible');
       loadExceptions();
       loadRozvrh();
+      loadAkce();
+      loadAkcePravidelne();
     } else {
       sessionStorage.removeItem('koupaliste-admin-pw');
     }

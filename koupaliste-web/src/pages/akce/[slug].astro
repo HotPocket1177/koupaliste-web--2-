@@ -4,25 +4,17 @@ import { site } from '../../data/site.js';
 import { slugify } from '../../utils/slug.js';
 
 export function getStaticPaths() {
-  const paths = (site.akce ?? []).map((a) => ({
+  const datovane = (site.akce ?? []).map((a) => ({
     params: { slug: slugify(a.nazev) },
     props: { item: a },
   }));
 
-  if (site.akcePravidelne) {
-    paths.push({
-      params: { slug: 'pravidelne' },
-      props: {
-        item: {
-          nazev: 'Sobotní ranní cvičení',
-          popis: site.akcePravidelne.text,
-          banner: site.akcePravidelne.banner,
-        },
-      },
-    });
-  }
+  const pravidelne = (site.akcePravidelne ?? []).map((p) => ({
+    params: { slug: slugify(p.nazev) },
+    props: { item: { nazev: p.nazev, popis: p.text, banner: p.banner } },
+  }));
 
-  return paths;
+  return [...datovane, ...pravidelne];
 }
 
 const { item } = Astro.props;
